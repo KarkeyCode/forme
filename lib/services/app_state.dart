@@ -1,0 +1,324 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'auth/auth_service.dart';
+import 'health_service.dart';
+
+class FoodEntry {
+  FoodEntry(this.label, this.kcal, this.time);
+  final String label;
+  final int kcal; // negative = burned
+  final DateTime time;
+
+  Map<String, dynamic> toJson() =>
+      {'l': label, 'k': kcal, 't': time.millisecondsSinceEpoch};
+  factory FoodEntry.fromJson(Map<String, dynamic> j) => FoodEntry(
+      j['l'] as String, j['k'] as int, DateTime.fromMillisecondsSinceEpoch(j['t'] as int));
+}
+
+enum StepRange { week, month, total }
+
+enum Sex { male, female, other }
+
+/// The user's manually-entered or health-synced body profile.
+class UserProfile {
+  UserProfile({
+    this.name = '',
+    this.email = '',
+    this.provider = '',
+    this.heightCm,
+    this.weightKg,
+    this.age,
+    this.sex,
+    this.goal = 'Stay healthy',
+    this.bodyFatPct,
+    this.syncedFromHealth = false,
+  });
+
+  String name;
+  String email;
+  String provider; // 'google' | 'apple' | 'email' | ''
+  double? heightCm;
+  double? weightKg;
+  int? age;
+  Sex? sex;
+  String goal;
+  double? bodyFatPct;
+  bool syncedFromHealth;
+
+  bool get hasBody => heightCm != null && weightKg != null;
+
+  double? get bmi {
+    if (heightCm == null || weightKg == null || heightCm == 0) return null;
+    final m = heightCm! / 100;
+    return weightKg! / (m * m);
+  }
+
+  /// Basal metabolic rate (Mifflin-St Jeor), used for the overview.
+  int? get bmr {
+    if (heightCm == null || weightKg == null || age == null) return null;
+    final base = 10 * weightKg! + 6.25 * heightCm! - 5 * age!;
+    final s = switch (sex) {
+      Sex.male => 5,
+      Sex.female => -161,
+      _ => -78, // average
+    };
+    return (base + s).round();
+  }
+
+  double? get leanMassKg =>
+      (weightKg != null && bodyFatPct != null) ? weightKg! * (1 - bodyFatPct! / 100) : null;
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'email': email,
+        'provider': provider,
+        'h': heightCm,
+        'w': weightKg,
+        'age': age,
+        'sex': sex?.index,
+        'goal': goal,
+        'bf': bodyFatPct,
+        'sync': syncedFromHealth,
+      };
+
+  factory UserProfile.fromJson(Map<String, dynamic> j) => UserProfile(
+        name: (j['name'] ?? '') as String,
+        email: (j['email'] ?? '') as String,
+        provider: (j['provider'] ?? '') as String,
+        heightCm: (j['h'] as num?)?.toDouble(),
+        weightKg: (j['w'] as num?)?.toDouble(),
+        age: j['age'] as int?,
+        sex: j['sex'] == null ? null : Sex.values[j['sex'] as int],
+        goal: (j['goal'] ?? 'Stay healthy') as String,
+        bodyFatPct: (j['bf'] as num?)?.toDouble(),
+        syncedFromHealth: (j['sync'] ?? false) as bool,
+      );
+}
+
+/// A reward that points can be redeemed for (prototype — not fulfilled).
+class GiftCard {
+  const GiftCard(this.brand, this.amount, this.cost, this.color);
+  final String brand;
+  final String amount; // e.g. "$10"
+  final int cost; // points
+  final int color; // brand accent (ARGB)
+}
+
+const kGiftCards = [
+  GiftCard('Amazon', '\$10', 2000, 0xFFFF9900),
+  GiftCard('Spotify', '3 months', 2500, 0xFF1DB954),
+  GiftCard('Apple', '\$15', 3000, 0xFFA2AAAD),
+  GiftCard('Uber Eats', '\$20', 3500, 0xFF06C167),
+  GiftCard('Nike', '\$25', 5000, 0xFFF04E23),
+  GiftCard('Starbucks', '\$10', 2200, 0xFF00704A),
+];
+
+class AppState extends ChangeNotifier {
+  late SharedPreferences _prefs;
+  final health = HealthService();
+  final auth = createAuthService();
+
+  bool onboarded = false;
+  bool darkMode = false;
+  bool isPro = false;
+  int points = 1340;
+  List<FoodEntry> foods = [];
+  Set<int> completedExercises = {};
+
+  // Auth + profile
+  bool get signedIn => profile.provider.isNotEmpty;
+  UserProfile profile = UserProfile();
+  List<int> claimedGiftCards = []; // indexes into kGiftCards
+
+  StepRange range = StepRange.week;
+  Map<StepRange, int> steps = {StepRange.week: 8204, StepRange.month: 34120, StepRange.total: 212480};
+  List<double> weekSteps = [5200, 7400, 6100, 9800, 7200, 10400, 8204];
+  // Weekly series for the swipeable metric graphs (demo data; HR/stress have
+  // no cross-platform health API so these stay synthetic).
+  List<double> weekHeartRate = [68, 72, 70, 76, 69, 74, 71];
+  List<double> weekStress = [32, 46, 38, 55, 41, 48, 36];
+  int restingHr = 62;
+  int currentStress = 38;
+  bool usingRealSteps = false;
+
+  Future<void> load() async {
+    _prefs = await SharedPreferences.getInstance();
+    onboarded = _prefs.getBool('onboarded') ?? false;
+    darkMode = _prefs.getBool('dark') ?? false;
+    isPro = _prefs.getBool('pro') ?? false;
+    points = _prefs.getInt('points') ?? 1340;
+    completedExercises =
+        (_prefs.getStringList('done') ?? []).map(int.parse).toSet();
+    claimedGiftCards =
+        (_prefs.getStringList('claimed') ?? []).map(int.parse).toList();
+    final profRaw = _prefs.getString('profile');
+    if (profRaw != null) {
+      profile = UserProfile.fromJson(jsonDecode(profRaw) as Map<String, dynamic>);
+    }
+    final raw = _prefs.getString('foods');
+    if (raw != null) {
+      foods = (jsonDecode(raw) as List)
+          .map((e) => FoodEntry.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } else {
+      final now = DateTime.now();
+      foods = [
+        FoodEntry('A banana', 105, now),
+        FoodEntry('Half a bowl of oatmeal', 220, now),
+        FoodEntry('Grilled Chicken salad', 480, now),
+        FoodEntry('Ran 5km 3hrs ago', -435, now),
+      ];
+    }
+    if (onboarded) refreshSteps();
+  }
+
+  Future<void> refreshSteps() async {
+    final r = await health.fetch();
+    if (r != null) {
+      steps = r.totals;
+      weekSteps = r.week;
+      usingRealSteps = true;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> requestHealth() => health.requestPermission();
+
+  // ---- Auth ----------------------------------------------------------------
+
+  Future<bool> signIn(Future<AuthUser?> Function() method) async {
+    final user = await method();
+    if (user == null) return false;
+    profile
+      ..name = user.name
+      ..email = user.email
+      ..provider = user.provider;
+    _saveProfile();
+    notifyListeners();
+    return true;
+  }
+
+  Future<bool> signInWithGoogle() => signIn(auth.signInWithGoogle);
+  Future<bool> signInWithApple() => signIn(auth.signInWithApple);
+  Future<bool> signInWithEmail(String email, String password) =>
+      signIn(() => auth.signInWithEmail(email, password));
+
+  Future<void> signOut() async {
+    await auth.signOut();
+    profile = UserProfile();
+    _saveProfile();
+    notifyListeners();
+  }
+
+  // ---- Profile -------------------------------------------------------------
+
+  void saveProfile(UserProfile p) {
+    profile = p;
+    _saveProfile();
+    notifyListeners();
+  }
+
+  /// Pull body stats from connected health data (falls back to demo values
+  /// on web / when nothing is available).
+  Future<void> syncProfileFromHealth() async {
+    final ok = await requestHealth();
+    final v = await health.fetchBody();
+    if (v != null) {
+      profile
+        ..heightCm = v.heightCm ?? profile.heightCm
+        ..weightKg = v.weightKg ?? profile.weightKg;
+    }
+    // Sensible demo defaults so the overview is populated in the prototype.
+    profile
+      ..heightCm ??= 178
+      ..weightKg ??= 74
+      ..age ??= 24
+      ..sex ??= Sex.male
+      ..bodyFatPct ??= 17
+      ..syncedFromHealth = ok || !kIsWeb;
+    _saveProfile();
+    notifyListeners();
+  }
+
+  // ---- Gift cards ----------------------------------------------------------
+
+  bool canClaim(GiftCard g) => points >= g.cost;
+
+  bool claimGiftCard(int index) {
+    final g = kGiftCards[index];
+    if (points < g.cost || claimedGiftCards.contains(index)) return false;
+    points -= g.cost;
+    claimedGiftCards.add(index);
+    _prefs.setInt('points', points);
+    _prefs.setStringList('claimed', claimedGiftCards.map((e) => '$e').toList());
+    notifyListeners();
+    return true;
+  }
+
+  // ---- Onboarding / settings ----------------------------------------------
+
+  void completeOnboarding() {
+    onboarded = true;
+    _prefs.setBool('onboarded', true);
+    notifyListeners();
+    refreshSteps();
+  }
+
+  void resetOnboarding() {
+    onboarded = false;
+    _prefs.setBool('onboarded', false);
+    notifyListeners();
+  }
+
+  void toggleDark() {
+    darkMode = !darkMode;
+    _prefs.setBool('dark', darkMode);
+    notifyListeners();
+  }
+
+  void setPro(bool v) {
+    isPro = v;
+    _prefs.setBool('pro', v);
+    notifyListeners();
+  }
+
+  void setRange(StepRange r) {
+    range = r;
+    notifyListeners();
+  }
+
+  void addFood(FoodEntry e) {
+    foods.add(e);
+    _saveFoods();
+    notifyListeners();
+  }
+
+  void removeFood(int i) {
+    foods.removeAt(i);
+    _saveFoods();
+    notifyListeners();
+  }
+
+  void toggleExercise(int i, int reward) {
+    if (completedExercises.remove(i)) {
+      points -= reward;
+    } else {
+      completedExercises.add(i);
+      points += reward;
+    }
+    _prefs.setStringList('done', completedExercises.map((e) => '$e').toList());
+    _prefs.setInt('points', points);
+    notifyListeners();
+  }
+
+  int get totalKcal => foods.fold(0, (a, e) => a + e.kcal);
+
+  void _saveFoods() =>
+      _prefs.setString('foods', jsonEncode(foods.map((e) => e.toJson()).toList()));
+
+  void _saveProfile() =>
+      _prefs.setString('profile', jsonEncode(profile.toJson()));
+}

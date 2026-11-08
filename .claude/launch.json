@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "maeve-web",
+      "runtimeExecutable": "dart",
+      "runtimeArgs": ["run", "tool/serve.dart"],
+      "port": 8765
+    }
+  ]
+}
