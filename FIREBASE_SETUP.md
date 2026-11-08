@@ -1,4 +1,4 @@
-# Firebase Auth setup (Google / Apple / Email)
+# Firebase Auth setup (Google / Microsoft / GitHub / Email)
 
 The app ships with a **prototype** auth backend (`LocalAuthService`) so the whole
 sign-in flow works today without any cloud setup. Nothing collects real
@@ -16,8 +16,11 @@ so swapping the backend is a drop-in.
 2. Enable the sign-in providers you want under **Authentication → Sign-in method**:
    - **Google** — toggle on, pick a support email.
    - **Email/Password** — toggle on.
-   - **Apple** — requires a paid Apple Developer account and an iOS build (this
-     project is currently Android + Web; add iOS with `flutter create .` first).
+   - **GitHub** — toggle on, then paste the Client ID + Client secret from a
+     GitHub OAuth App (see "GitHub sign-in" at the bottom of this file).
+   - **Microsoft** — toggle on, then paste the Application (client) ID + a
+     client secret from an Azure AD app registration. Add the Firebase redirect
+     URI to the Azure app's "Web" platform.
 
 ## 2. Add the FlutterFire config
 
@@ -38,7 +41,6 @@ In `pubspec.yaml` under `dependencies:`
   firebase_core: ^3.6.0
   firebase_auth: ^5.3.1
   google_sign_in: ^6.2.1
-  sign_in_with_apple: ^6.1.3   # only if you enable Apple
 ```
 
 Then `flutter pub get`.
@@ -63,9 +65,9 @@ Future<void> main() async {
 Create `lib/services/auth/firebase_auth_service.dart`:
 
 ```dart
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-// import 'package:sign_in_with_apple/sign_in_with_apple.dart'; // if using Apple
 
 import 'auth_service.dart';
 
@@ -96,19 +98,28 @@ class FirebaseAuthService implements AuthService {
   }
 
   @override
-  Future<AuthUser?> signInWithApple({String? email}) async {
-    // Requires sign_in_with_apple + Apple Developer setup.
-    // final apple = await SignInWithApple.getAppleIDCredential(scopes: [
-    //   AppleIDAuthorizationScopes.email,
-    //   AppleIDAuthorizationScopes.fullName,
-    // ]);
-    // final cred = OAuthProvider('apple.com').credential(
-    //   idToken: apple.identityToken,
-    //   accessToken: apple.authorizationCode,
-    // );
-    // final res = await _auth.signInWithCredential(cred);
-    // return _map(res.user, 'apple');
-    throw UnimplementedError('Enable Apple sign-in per FIREBASE_SETUP.md step 1.');
+  Future<AuthUser?> signInWithMicrosoft({String? email}) async {
+    // Federated web sign-in via Azure AD. Enable Microsoft in Firebase first.
+    final provider = OAuthProvider('microsoft.com');
+    // provider.setCustomParameters({'tenant': '<your-tenant-or-common>'});
+    final res = kIsWeb
+        ? await _auth.signInWithPopup(provider)
+        : await _auth.signInWithProvider(provider);
+    return _map(res.user, 'microsoft');
+  }
+
+  @override
+  Future<AuthUser?> signInWithGitHub({String? email}) async {
+    // Federated web sign-in. On Android this opens a secure Chrome Custom Tab
+    // and handles the GitHub login + callback automatically; on web it uses a
+    // popup. `email` (the prototype username) is ignored — GitHub supplies the
+    // identity.
+    final provider = GithubAuthProvider();
+    // provider.addScope('read:user'); // add scopes if you need GitHub data
+    final res = kIsWeb
+        ? await _auth.signInWithPopup(provider)
+        : await _auth.signInWithProvider(provider);
+    return _map(res.user, 'github');
   }
 
   @override
@@ -148,3 +159,48 @@ AuthService createAuthService() => FirebaseAuthService(); // was LocalAuthServic
 That's it — the login screen, profile and sign-out now use real Firebase. If
 anything isn't configured yet, keep `LocalAuthService()` and the prototype flow
 keeps working.
+
+---
+
+## GitHub sign-in
+
+The app already shows a **Continue with GitHub** button (prototype). To make it
+real, GitHub's OAuth sits behind Firebase's `GithubAuthProvider`, so no extra
+Flutter package is needed — just `firebase_auth` (already added above).
+
+### 1. Register a GitHub OAuth App
+
+1. GitHub → **Settings → Developer settings → OAuth Apps → New OAuth App**.
+2. **Homepage URL**: anything (e.g. your site or `https://forme.app`).
+3. **Authorization callback URL**: copy this from Firebase Console →
+   **Authentication → Sign-in method → GitHub** (it looks like
+   `https://<your-project>.firebaseapp.com/__/auth/handler`).
+4. Create the app and note the **Client ID** and generate a **Client secret**.
+
+### 2. Enable GitHub in Firebase
+
+Firebase Console → **Authentication → Sign-in method → GitHub** → toggle on,
+paste the **Client ID** and **Client secret**, and save.
+
+### 3. Android specifics
+
+- `signInWithProvider` opens a Chrome Custom Tab, so make sure the GitHub
+  provider's callback domain is listed under **Authentication → Settings →
+  Authorized domains**.
+- If you hit `missing-client-identifier`, re-download
+  `android/app/google-services.json` after enabling the provider (and after
+  adding your release/debug **SHA-1** fingerprint under Project Settings → Your
+  apps). Get the SHA-1 with:
+
+  ```bash
+  cd android && ./gradlew signingReport
+  ```
+
+### 4. Web specifics
+
+On web the code uses `signInWithPopup` instead of `signInWithProvider`. Add your
+domain under **Authentication → Settings → Authorized domains**, and make sure
+popups aren't blocked.
+
+The `signInWithGitHub` method is already in the `FirebaseAuthService` example in
+step 5 — once the provider is enabled, the existing GitHub button just works.

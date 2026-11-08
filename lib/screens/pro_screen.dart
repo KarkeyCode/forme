@@ -152,7 +152,7 @@ class _ProScreenState extends State<ProScreen> {
                   onPressed: () {
                     context.read<AppState>().setPro(true);
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                        content: Text('Welcome to Forme PRO (demo — no payment taken)')));
+                        content: Text('Welcome to Forme PRO (demo, no payment taken)')));
                     context.pop();
                   },
                   child: Text(_trial ? 'Start Free Trial' : 'Join Now',

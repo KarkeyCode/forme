@@ -7,13 +7,16 @@ import '../services/notification_service.dart';
 import '../theme.dart';
 import '../widgets/avatar.dart';
 import '../widgets/common.dart';
+import 'avatar_crop_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
   Future<void> _pickPhoto(BuildContext context, AppState s) async {
     final path = await pickGalleryImage();
-    if (path != null) s.setPhotoPath(path);
+    if (path == null || !context.mounted) return;
+    final cropped = await cropAvatar(context, path);
+    if (cropped != null) s.setPhotoPath(cropped);
   }
 
   @override
@@ -80,13 +83,10 @@ class ProfileScreen extends StatelessWidget {
                   ]),
                 ),
                 if (p.provider.isNotEmpty)
-                  Icon(
-                    switch (p.provider) {
-                      'google' => Icons.g_mobiledata,
-                      'apple' => Icons.apple,
-                      _ => Icons.mail_outline,
-                    },
-                    color: context.fg.withValues(alpha: 0.5),
+                  Opacity(
+                    opacity: 0.85,
+                    child: authProviderIcon(p.provider,
+                        size: 22, iconColor: context.fg.withValues(alpha: 0.6)),
                   ),
               ]),
             ),
@@ -124,6 +124,17 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 14),
 
+            // Connected accounts
+            _sectionLabel(context, 'Connected Accounts'),
+            GlassCard(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Column(children: [
+                for (final prov in const ['google', 'email', 'github', 'microsoft'])
+                  _AccountRow(provider: prov),
+              ]),
+            ),
+            const SizedBox(height: 14),
+
             _sectionLabel(context, 'Settings'),
             GlassCard(
               padding: const EdgeInsets.symmetric(vertical: 6),
@@ -131,15 +142,25 @@ class ProfileScreen extends StatelessWidget {
                 item(Icons.card_giftcard, 'Rewards & Gift Cards',
                     trailing: Icon(Icons.chevron_right, color: context.fg.withValues(alpha: 0.4)),
                     onTap: () => context.push('/rewards')),
-                item(Icons.dark_mode_outlined, 'Dark Mode',
-                    trailing: Switch(value: s.darkMode, onChanged: (_) => s.toggleDark()),
-                    onTap: s.toggleDark),
+                // Appearance: light / dark / auto
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+                  child: Row(children: [
+                    Icon(Icons.brightness_6_outlined, color: context.fg),
+                    const SizedBox(width: 12),
+                    Text('Appearance', style: TextStyle(color: context.fg, fontSize: 16)),
+                    const Spacer(),
+                    _ThemeToggle(mode: s.themeMode, onChanged: s.setThemeMode),
+                  ]),
+                ),
+                item(Icons.vibration, 'Haptics',
+                    trailing: Switch(value: s.hapticsEnabled, onChanged: s.setHaptics)),
                 item(Icons.favorite_border, 'Reconnect Health Data', onTap: () async {
                   final ok = await s.requestHealth();
                   if (ok) await s.refreshSteps();
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text(ok ? 'Health Connect linked' : 'Health Connect not available — using demo data')));
+                        content: Text(ok ? 'Health Connect linked' : 'Health Connect not available, using demo data')));
                   }
                 }),
                 item(Icons.notifications_active_outlined, 'Reminders',
@@ -172,6 +193,15 @@ class ProfileScreen extends StatelessWidget {
                     await s.signOut();
                     if (context.mounted) context.go('/onboarding');
                   }),
+              ]),
+            ),
+            const SizedBox(height: 14),
+
+            // Dev Test Tools
+            _sectionLabel(context, 'Dev Test Tools'),
+            GlassCard(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Column(children: [
                 item(Icons.restart_alt, 'Replay Onboarding', color: MaeveColors.red, onTap: () {
                   s.resetOnboarding();
                   context.go('/onboarding');
@@ -180,7 +210,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Center(
-              child: Text('FORME v1.2.0',
+              child: Text('FORME v1.2.1',
                   style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.4))),
             ),
           ],
@@ -239,4 +269,102 @@ class ProfileScreen extends StatelessWidget {
           Text(value, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.fg)),
         ]),
       );
+}
+
+/// A compact light / dark / auto segmented control.
+class _ThemeToggle extends StatelessWidget {
+  const _ThemeToggle({required this.mode, required this.onChanged});
+  final ThemeMode mode;
+  final ValueChanged<ThemeMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget seg(ThemeMode m, IconData icon) {
+      final sel = mode == m;
+      return GestureDetector(
+        onTap: () => onChanged(m),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: sel ? context.fg : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon,
+              size: 18,
+              color: sel ? (context.isDark ? Colors.black : Colors.white) : context.fg.withValues(alpha: 0.6)),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: context.fg.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        seg(ThemeMode.light, Icons.light_mode_outlined),
+        seg(ThemeMode.dark, Icons.dark_mode_outlined),
+        seg(ThemeMode.system, Icons.brightness_auto_outlined),
+      ]),
+    );
+  }
+}
+
+/// A row in the Connected Accounts list: shows the provider logo, its status,
+/// and a connect / disconnect action (prototype — no real OAuth linking).
+class _AccountRow extends StatelessWidget {
+  const _AccountRow({required this.provider});
+  final String provider;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<AppState>();
+    final isPrimary = s.profile.provider == provider;
+    final linked = isPrimary || s.linkedProviders.contains(provider);
+    final iconColor = provider == 'microsoft' ? const Color(0xFF00A4EF) : context.fg;
+
+    Widget trailing;
+    if (isPrimary) {
+      trailing = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+            color: MaeveColors.green.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
+        child: const Text('Primary',
+            style: TextStyle(fontSize: 12, color: MaeveColors.green, fontWeight: FontWeight.w700)),
+      );
+    } else if (linked) {
+      trailing = TextButton(
+        onPressed: () => s.unlinkProvider(provider),
+        child: Text('Disconnect', style: TextStyle(color: context.fg.withValues(alpha: 0.6), fontSize: 13)),
+      );
+    } else {
+      trailing = OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: context.fg,
+          side: BorderSide(color: context.fg.withValues(alpha: 0.25)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          visualDensity: VisualDensity.compact,
+        ),
+        onPressed: () {
+          s.linkProvider(provider);
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('${authProviderLabel(provider)} connected')));
+        },
+        child: const Text('Connect'),
+      );
+    }
+
+    return ListTile(
+      leading: SizedBox(width: 26, child: Center(child: authProviderIcon(provider, size: 22, iconColor: iconColor))),
+      title: Text(authProviderLabel(provider), style: TextStyle(color: context.fg)),
+      subtitle: Text(
+        isPrimary ? 'Your main sign in' : (linked ? 'Connected' : 'Not connected'),
+        style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.5)),
+      ),
+      trailing: trailing,
+    );
+  }
 }

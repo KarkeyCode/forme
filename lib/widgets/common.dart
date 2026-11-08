@@ -178,6 +178,25 @@ class OnboardingLayout extends StatelessWidget {
   }
 }
 
+/// A provider logo used across login and the connected accounts list.
+/// Google keeps its brand colours (asset); the rest take [iconColor].
+Widget authProviderIcon(String provider, {double size = 22, Color iconColor = Colors.black}) {
+  return switch (provider) {
+    'google' => Image.asset('assets/google_g.png', width: size, height: size),
+    'github' => Icon(Icons.code, size: size, color: iconColor),
+    'microsoft' => Icon(Icons.window, size: size, color: iconColor),
+    _ => Icon(Icons.mail_outline, size: size, color: iconColor),
+  };
+}
+
+String authProviderLabel(String p) => switch (p) {
+      'google' => 'Google',
+      'github' => 'GitHub',
+      'microsoft' => 'Microsoft',
+      'email' => 'Email',
+      _ => p,
+    };
+
 class MaeveLogo extends StatelessWidget {
   const MaeveLogo({super.key, this.size = 28, this.color});
   final double size;

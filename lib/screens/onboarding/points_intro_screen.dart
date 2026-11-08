@@ -60,7 +60,7 @@ class PointsIntroScreen extends StatelessWidget {
               step(Icons.savings_outlined, 'Build Up A Balance',
                   'Your points add up over time and never expire while you stay active.'),
               step(Icons.card_giftcard, 'Redeem For Gift Cards',
-                  'Swap points for gift cards from brands you love — Amazon, Spotify, Apple and more.'),
+                  'Swap your points for gift cards from brands you love, like Amazon, Spotify and Nike.'),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -72,7 +72,7 @@ class PointsIntroScreen extends StatelessWidget {
                   Icon(Icons.info_outline, size: 18, color: context.fg.withValues(alpha: 0.6)),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text('Rewards are a prototype — redemptions aren\'t fulfilled yet.',
+                    child: Text('Rewards are still a prototype, so nothing is fulfilled just yet.',
                         style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.6))),
                   ),
                 ]),

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../services/haptics.dart';
 import '../theme.dart';
 
 class HomeShell extends StatefulWidget {
@@ -25,6 +26,19 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
     widget.shell.goBranch(i, initialLocation: i == widget.shell.currentIndex);
   }
 
+  // Swipe left/right on the page body to move between adjacent tabs.
+  void _onSwipe(DragEndDetails d) {
+    final v = d.primaryVelocity ?? 0;
+    final idx = widget.shell.currentIndex;
+    if (v < -280 && idx < 3) {
+      Haptics.select();
+      _go(idx + 1);
+    } else if (v > 280 && idx > 0) {
+      Haptics.select();
+      _go(idx - 1);
+    }
+  }
+
   @override
   void dispose() {
     _menu.dispose();
@@ -35,15 +49,17 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
   Widget build(BuildContext context) {
     final navBg = context.isDark ? const Color(0xFF1B1B1B) : Colors.white;
     final idx = widget.shell.currentIndex;
+    // Scale the bar to the device width so it feels right on small and large phones.
+    final ns = (MediaQuery.sizeOf(context).width / 390).clamp(0.9, 1.14);
     Widget tab(int i, IconData icon, String label) => Expanded(
           child: InkResponse(
             onTap: () => _go(i),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(icon, size: 24, color: idx == i ? context.fg : MaeveColors.muted),
-              const SizedBox(height: 2),
+              Icon(icon, size: 24 * ns, color: idx == i ? context.fg : MaeveColors.muted),
+              SizedBox(height: 2 * ns),
               Text(label,
                   style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 11 * ns,
                       fontWeight: idx == i ? FontWeight.w600 : FontWeight.w400,
                       color: idx == i ? context.fg : MaeveColors.muted)),
             ]),
@@ -52,7 +68,11 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
 
     return Scaffold(
       body: Stack(children: [
-        widget.shell,
+        GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onHorizontalDragEnd: _onSwipe,
+          child: widget.shell,
+        ),
         // dim + close when the radial menu is open
         AnimatedBuilder(
           animation: _menu,
@@ -87,19 +107,19 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
         child: SafeArea(
           top: false,
           child: SizedBox(
-            height: 64,
+            height: 64 * ns,
             child: Row(children: [
               tab(0, Icons.home_outlined, 'Home'),
               tab(1, Icons.eco_outlined, 'Diet'),
               Expanded(
                 child: Transform.translate(
-                  offset: const Offset(0, -18),
+                  offset: Offset(0, -18 * ns),
                   child: Center(
                     child: GestureDetector(
                       onTap: _toggle,
                       child: Container(
-                        width: 52,
-                        height: 52,
+                        width: 52 * ns,
+                        height: 52 * ns,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: context.fg,
@@ -109,7 +129,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
                           animation: _menu,
                           builder: (_, __) => Transform.rotate(
                             angle: _menu.value * math.pi / 4,
-                            child: Icon(Icons.add, size: 30, color: navBg),
+                            child: Icon(Icons.add, size: 30 * ns, color: navBg),
                           ),
                         ),
                       ),

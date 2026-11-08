@@ -7,6 +7,7 @@ import '../../services/app_state.dart';
 import '../../theme.dart';
 import '../../widgets/avatar.dart';
 import '../../widgets/common.dart';
+import '../avatar_crop_screen.dart';
 
 /// Capitalises the first letter of each word as the user types — used for the
 /// name fields so profile text reads with capitalised first letters.
@@ -62,7 +63,9 @@ class _CustomizeProfileScreenState extends State<CustomizeProfileScreen> {
 
   Future<void> _pickPhoto() async {
     final path = await pickGalleryImage();
-    if (path != null && mounted) context.read<AppState>().setPhotoPath(path);
+    if (path == null || !mounted) return;
+    final cropped = await cropAvatar(context, path);
+    if (cropped != null && mounted) context.read<AppState>().setPhotoPath(cropped);
   }
 
   @override

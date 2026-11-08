@@ -34,7 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
       context.go('/customize');
     } else {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Could not sign in — try again')));
+          .showSnackBar(const SnackBar(content: Text('That didn\'t work. Give it another go.')));
     }
   }
 
@@ -44,10 +44,16 @@ class _LoginScreenState extends State<LoginScreen> {
     _run('google', () => context.read<AppState>().signInWithGoogle(email: email));
   }
 
-  Future<void> _apple() async {
-    final email = await _accountPicker(context, provider: 'apple');
+  Future<void> _microsoft() async {
+    final email = await _accountPicker(context, provider: 'microsoft');
     if (email == null || !mounted) return;
-    _run('apple', () => context.read<AppState>().signInWithApple(email: email));
+    _run('microsoft', () => context.read<AppState>().signInWithMicrosoft(email: email));
+  }
+
+  Future<void> _github() async {
+    final handle = await _accountPicker(context, provider: 'github');
+    if (handle == null || !mounted) return;
+    _run('github', () => context.read<AppState>().signInWithGitHub(email: handle));
   }
 
   @override
@@ -79,11 +85,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 12),
                 _AuthButton(
-                  label: 'Continue with Apple',
-                  icon: const Icon(Icons.apple, size: 22, color: Colors.white),
+                  label: 'Continue with Microsoft',
+                  icon: const Icon(Icons.window, size: 22, color: Color(0xFF00A4EF)),
+                  loading: _busy == 'microsoft',
+                  onTap: busy ? null : _microsoft,
+                ),
+                const SizedBox(height: 12),
+                _AuthButton(
+                  label: 'Continue with GitHub',
+                  icon: const Icon(Icons.code, size: 22, color: Colors.white),
                   dark: true,
-                  loading: _busy == 'apple',
-                  onTap: busy ? null : _apple,
+                  loading: _busy == 'github',
+                  onTap: busy ? null : _github,
                 ),
                 const SizedBox(height: 12),
                 _AuthButton(
@@ -120,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
               const SizedBox(height: 20),
               Center(
-                child: Text('Prototype — no real account is created yet',
+                child: Text('Prototype sign in. No real account is created yet.',
                     style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.4))),
               ),
               const Spacer(),
@@ -139,7 +152,13 @@ class _LoginScreenState extends State<LoginScreen> {
 /// the account email so the sign-in behaves like a real provider picker.
 Future<String?> _accountPicker(BuildContext context, {required String provider}) {
   final isGoogle = provider == 'google';
-  final brand = isGoogle ? 'Google' : 'Apple';
+  final isGithub = provider == 'github';
+  final brand = switch (provider) {
+    'google' => 'Google',
+    'github' => 'GitHub',
+    _ => 'Microsoft',
+  };
+  final accent = isGithub ? const Color(0xFF24292F) : const Color(0xFF1A73E8);
   final controller = TextEditingController();
   return showModalBottomSheet<String>(
     context: context,
@@ -154,8 +173,10 @@ Future<String?> _accountPicker(BuildContext context, {required String provider})
         Row(children: [
           if (isGoogle)
             Image.asset('assets/google_g.png', width: 24, height: 24)
+          else if (isGithub)
+            const Icon(Icons.code, color: Color(0xFF24292F), size: 26)
           else
-            const Icon(Icons.apple, color: Colors.black, size: 26),
+            const Icon(Icons.window, color: Color(0xFF00A4EF), size: 26),
           const SizedBox(width: 10),
           Text('Sign in with $brand',
               style: const TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.w600)),
@@ -164,18 +185,19 @@ Future<String?> _accountPicker(BuildContext context, {required String provider})
         const Text('to continue to Forme',
             style: TextStyle(color: Colors.black54, fontSize: 13)),
         const SizedBox(height: 20),
-        const Text('Choose an account',
-            style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600)),
+        Text(isGithub ? 'Enter your username' : 'Choose an account',
+            style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600)),
         const SizedBox(height: 10),
         TextField(
           controller: controller,
           autofocus: true,
-          keyboardType: TextInputType.emailAddress,
+          keyboardType: isGithub ? TextInputType.text : TextInputType.emailAddress,
           style: const TextStyle(color: Colors.black87),
           decoration: InputDecoration(
-            hintText: isGoogle ? 'you@gmail.com' : 'you@icloud.com',
+            hintText: isGithub ? 'your username' : (isGoogle ? 'you@gmail.com' : 'you@outlook.com'),
             hintStyle: const TextStyle(color: Colors.black38),
-            prefixIcon: const Icon(Icons.account_circle_outlined, color: Colors.black45),
+            prefixIcon: Icon(isGithub ? Icons.alternate_email : Icons.account_circle_outlined,
+                color: Colors.black45),
             filled: true,
             fillColor: const Color(0xFFF5F5F5),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
@@ -187,19 +209,24 @@ Future<String?> _accountPicker(BuildContext context, {required String provider})
           height: 48,
           child: FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF1A73E8),
+              backgroundColor: accent,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
             ),
             onPressed: () {
-              final mail = controller.text.trim();
-              Navigator.pop(ctx, mail.contains('@') ? mail : 'you@${isGoogle ? 'gmail.com' : 'icloud.com'}');
+              final input = controller.text.trim();
+              if (isGithub) {
+                Navigator.pop(ctx, input.isNotEmpty ? input.replaceAll(' ', '') : 'octocat');
+              } else {
+                Navigator.pop(ctx, input.contains('@') ? input : 'you@${isGoogle ? 'gmail.com' : 'outlook.com'}');
+              }
             },
-            child: const Text('Continue', style: TextStyle(fontWeight: FontWeight.w600)),
+            child: Text(isGithub ? 'Authorize' : 'Continue',
+                style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
         ),
         const SizedBox(height: 10),
         Center(
-          child: Text('Prototype sign-in — your real $brand account is not contacted',
+          child: Text('Prototype sign in. Your real $brand account is never contacted.',
               style: const TextStyle(color: Colors.black38, fontSize: 11)),
         ),
       ]),

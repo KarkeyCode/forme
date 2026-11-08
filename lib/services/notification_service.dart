@@ -29,6 +29,20 @@ class NotificationService {
   );
   static const _details = NotificationDetails(android: _androidDetails);
 
+  // Friendly, human reminder copy with a little emoji graphic.
+  static const List<(String, String)> _workoutLines = [
+    ('Ready when you are 👟', 'Your workout slot is here. A quick session now and future you says thanks.'),
+    ('Let\'s get moving 💪', 'Even 20 minutes counts. Press play and pick up some points on the way.'),
+    ('Time to sweat a little 🔥', 'You said this was your window to train. Go show up for yourself!'),
+    ('Movement break 🏃', 'A short workout now beats a long one later. You\'ve got this.'),
+  ];
+
+  static const List<(String, String)> _waterLines = [
+    ('Little sip reminder 💧', 'A glass of water right now keeps you feeling great. Cheers!'),
+    ('Stay hydrated 🥤', 'Quick water break? Your body (and your streak) will love it.'),
+    ('Hey, drink up 💦', 'One more glass gets you closer to today\'s goal. Easy win.'),
+  ];
+
   bool get supported => !kIsWeb;
 
   Future<void> init() async {
@@ -89,14 +103,15 @@ class NotificationService {
     await init();
     await cancelAll();
     if (!enabled) return;
-    await _daily(_workoutId, workoutHour, workoutMinute,
-        'Time to move 💪', 'Your workout window is now — let\'s get those points.');
+    // A little rotation so it never feels like the same robotic ping.
+    final wk = _workoutLines[DateTime.now().weekday % _workoutLines.length];
+    await _daily(_workoutId, workoutHour, workoutMinute, wk.$1, wk.$2);
     if (waterReminders) {
-      // Spread a few water nudges across the day.
+      // Spread a few friendly water nudges across the day.
       const hours = [9, 12, 15, 18, 21];
       for (var i = 0; i < hours.length; i++) {
-        await _daily(_waterBaseId + i, hours[i], 0,
-            'Hydrate 💧', 'Log a glass of water to stay on track and earn points.');
+        final w = _waterLines[(DateTime.now().day + i) % _waterLines.length];
+        await _daily(_waterBaseId + i, hours[i], 0, w.$1, w.$2);
       }
     }
   }
@@ -115,8 +130,8 @@ class NotificationService {
     try {
       final hh = hour.toString().padLeft(2, '0');
       final mm = minute.toString().padLeft(2, '0');
-      await _plugin.show(9999, 'Reminders on ✅',
-          'We\'ll nudge you to work out around $hh:$mm and to drink water through the day.',
+      await _plugin.show(9999, 'You\'re all set 🎉',
+          'We\'ll give you a friendly nudge to move around $hh:$mm, plus the odd reminder to sip some water.',
           _details);
     } catch (e) {
       debugPrint('notif show error: $e');

@@ -67,7 +67,7 @@ class _DietScreenState extends State<DietScreen> with SingleTickerProviderStateM
     if (t.isEmpty) return;
     final kcal = FoodEstimator.estimate(t);
     if (kcal == null) {
-      setState(() => _error = "couldn't estimate that — try e.g. \"2 eggs and toast\" or \"ran 5km\"");
+      setState(() => _error = "Hmm, couldn't read that one. Try something like \"2 eggs and toast\" or \"ran 5km\".");
       return;
     }
     context.read<AppState>().addFood(FoodEntry(t[0].toUpperCase() + t.substring(1), kcal, DateTime.now()));
@@ -144,7 +144,7 @@ class _DietScreenState extends State<DietScreen> with SingleTickerProviderStateM
                   child: Text(_error!, style: const TextStyle(color: MaeveColors.red, fontSize: 12)),
                 ),
               const SizedBox(height: 10),
-              Text('Type anything you ate or did — Forme estimates the calories.',
+              Text('Jot down anything you ate or did and Forme works out the calories.',
                   style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.4))),
             ],
           ),

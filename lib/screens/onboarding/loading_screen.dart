@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../../services/app_state.dart';
 import '../../theme.dart';
 import '../../widgets/common.dart';
-import '../../widgets/star_loader.dart';
+import '../../widgets/word_loader.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -30,10 +30,10 @@ class _LoadingScreenState extends State<LoadingScreen> {
       body: BlurBackground(
         child: Center(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            StarLoader(size: 140, color: context.fg),
+            const WordLoader(),
             const SizedBox(height: 28),
-            Text('Setting things up',
-                style: TextStyle(color: context.fg, fontSize: 16, fontWeight: FontWeight.w500)),
+            Text('Getting everything ready for you',
+                style: TextStyle(color: context.fg.withValues(alpha: 0.7), fontSize: 15, fontWeight: FontWeight.w500)),
           ]),
         ),
       ),

@@ -5,7 +5,7 @@ class AuthUser {
   const AuthUser({required this.name, required this.email, required this.provider});
   final String name;
   final String email;
-  final String provider; // 'google' | 'apple' | 'email'
+  final String provider; // 'google' | 'email' | 'github' | 'microsoft'
 }
 
 /// Auth backend contract. The app talks only to this interface, so swapping
@@ -16,7 +16,9 @@ abstract class AuthService {
   /// (Google/Apple supply the identity); the prototype uses it to build the
   /// signed-in user.
   Future<AuthUser?> signInWithGoogle({String? email});
-  Future<AuthUser?> signInWithApple({String? email});
+  Future<AuthUser?> signInWithMicrosoft({String? email});
+  /// [email] carries the chosen GitHub username (or email) in the prototype.
+  Future<AuthUser?> signInWithGitHub({String? email});
   Future<AuthUser?> signInWithEmail(String email, String password);
   Future<void> signOut();
 }
@@ -31,7 +33,12 @@ AuthService createAuthService() => LocalAuthService();
 class LocalAuthService implements AuthService {
   Future<AuthUser> _simulate(String provider, {String? email}) async {
     await Future<void>.delayed(const Duration(milliseconds: 650));
-    final mail = email ?? 'you@${provider == 'apple' ? 'icloud.com' : 'gmail.com'}';
+    final mail = email ??
+        switch (provider) {
+          'microsoft' => 'you@outlook.com',
+          'github' => 'octocat',
+          _ => 'you@gmail.com',
+        };
     final name = _nameFromEmail(mail);
     final user = AuthUser(name: name, email: mail, provider: provider);
     final prefs = await SharedPreferences.getInstance();
@@ -51,7 +58,10 @@ class LocalAuthService implements AuthService {
   Future<AuthUser?> signInWithGoogle({String? email}) => _simulate('google', email: email);
 
   @override
-  Future<AuthUser?> signInWithApple({String? email}) => _simulate('apple', email: email);
+  Future<AuthUser?> signInWithMicrosoft({String? email}) => _simulate('microsoft', email: email);
+
+  @override
+  Future<AuthUser?> signInWithGitHub({String? email}) => _simulate('github', email: email);
 
   @override
   Future<AuthUser?> signInWithEmail(String email, String password) =>

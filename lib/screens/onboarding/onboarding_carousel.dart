@@ -196,7 +196,7 @@ class _CompanionPage extends StatelessWidget {
         ],
       ),
       title: 'Your New\nHealth Companion',
-      body: const Text('Track your data, plan your meals, follow workouts built around your goals — and earn rewards for staying consistent.'),
+      body: const Text('Track your day, plan your meals and follow workouts built around your goals. Stay consistent and earn rewards while you are at it.'),
     );
   }
 }
@@ -208,7 +208,7 @@ class _HowPage extends StatelessWidget {
     return const _Page(
       art: _PhoneMock(),
       title: 'How It Works',
-      body: Text('Forme reads your health data automatically and turns it into a simple, personalised picture of your day.'),
+      body: Text('Forme quietly reads your health data and turns it into a clear picture of your day. No spreadsheets, no fuss.'),
     );
   }
 }
@@ -252,10 +252,10 @@ class _SecurityPage extends StatelessWidget {
       ),
       title: 'Your Data Is Safe',
       body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Your health is personal. We protect it with the highest standard of security.'),
+        const Text('Your health is personal, and we treat it that way. Here is how we keep it safe.'),
         const SizedBox(height: 16),
         point(Icons.lock_outline, 'End-To-End Encryption',
-            'Encrypted in transit and at rest — unreadable to anyone but you.'),
+            'Encrypted on the way and while it sits on your device, so only you can read it.'),
         point(Icons.block, 'Never Sold, Never Shared',
             'We never sell or share your personal data with anyone. Ever.'),
         point(Icons.phonelink_lock_outlined, 'You Stay In Control',

@@ -18,6 +18,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
   late bool _water;
   late TimeOfDay _time;
   late int _goalMl;
+  late ThemeMode _theme;
 
   @override
   void initState() {
@@ -27,11 +28,17 @@ class _RemindersScreenState extends State<RemindersScreen> {
     _water = s.waterRemindersEnabled;
     _time = TimeOfDay(hour: s.workoutHour, minute: s.workoutMinute);
     _goalMl = s.waterGoalMl;
+    _theme = s.themeMode;
   }
 
   Future<void> _pickTime() async {
     final t = await showTimePicker(context: context, initialTime: _time);
     if (t != null) setState(() => _time = t);
+  }
+
+  void _setTheme(ThemeMode m) {
+    setState(() => _theme = m);
+    context.read<AppState>().setThemeMode(m); // apply live
   }
 
   Future<void> _continue() async {
@@ -72,17 +79,77 @@ class _RemindersScreenState extends State<RemindersScreen> {
               const SizedBox(height: 22),
               Expanded(
                 child: ListView(children: [
-                  GlassCard(
-                    child: Column(children: [
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        value: _notifs,
-                        onChanged: (v) => setState(() => _notifs = v),
-                        title: Text('Enable Notifications',
-                            style: TextStyle(fontWeight: FontWeight.w600, color: context.fg)),
-                        subtitle: Text('Workout and water reminders',
-                            style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.6))),
+                  // Vivid, inviting notifications toggle.
+                  GestureDetector(
+                    onTap: () => setState(() => _notifs = !_notifs),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(22),
+                        gradient: _notifs
+                            ? const LinearGradient(
+                                colors: [Color(0xFF7C5CFF), Color(0xFF4F8BFF)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight)
+                            : null,
+                        color: _notifs ? null : context.cardColor,
+                        boxShadow: _notifs
+                            ? [BoxShadow(color: const Color(0xFF6A6CFF).withValues(alpha: 0.35), blurRadius: 20, offset: const Offset(0, 8))]
+                            : null,
                       ),
+                      child: Row(children: [
+                        Container(
+                          width: 52,
+                          height: 52,
+                          decoration: BoxDecoration(
+                            color: _notifs ? Colors.white.withValues(alpha: 0.2) : context.fg.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(_notifs ? Icons.notifications_active : Icons.notifications_off_outlined,
+                              color: _notifs ? Colors.white : context.fg.withValues(alpha: 0.6), size: 28),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text('Turn On Reminders',
+                                style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w700,
+                                    color: _notifs ? Colors.white : context.fg)),
+                            const SizedBox(height: 2),
+                            Text(
+                                _notifs
+                                    ? 'Nice! We will give you a friendly nudge to move and hydrate.'
+                                    : 'Get gentle nudges for workouts and water. Stay on your streak.',
+                                style: TextStyle(
+                                    fontSize: 12.5,
+                                    height: 1.3,
+                                    color: _notifs ? Colors.white.withValues(alpha: 0.9) : context.fg.withValues(alpha: 0.6))),
+                          ]),
+                        ),
+                        Switch(
+                          value: _notifs,
+                          onChanged: (v) => setState(() => _notifs = v),
+                          activeThumbColor: Colors.white,
+                          activeTrackColor: Colors.white.withValues(alpha: 0.4),
+                        ),
+                      ]),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _sectionLabel(context, 'Appearance'),
+                  GlassCard(
+                    child: Row(children: [
+                      _ThemeChoice(
+                          label: 'Light', icon: Icons.light_mode_outlined, mode: ThemeMode.light,
+                          selected: _theme == ThemeMode.light, onTap: _setTheme),
+                      _ThemeChoice(
+                          label: 'Dark', icon: Icons.dark_mode_outlined, mode: ThemeMode.dark,
+                          selected: _theme == ThemeMode.dark, onTap: _setTheme),
+                      _ThemeChoice(
+                          label: 'Auto', icon: Icons.brightness_auto_outlined, mode: ThemeMode.system,
+                          selected: _theme == ThemeMode.system, onTap: _setTheme),
                     ]),
                   ),
                   const SizedBox(height: 14),
@@ -156,4 +223,47 @@ class _RemindersScreenState extends State<RemindersScreen> {
         padding: const EdgeInsets.only(bottom: 8, left: 2),
         child: Text(t, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.fg.withValues(alpha: 0.7))),
       );
+}
+
+class _ThemeChoice extends StatelessWidget {
+  const _ThemeChoice(
+      {required this.label,
+      required this.icon,
+      required this.mode,
+      required this.selected,
+      required this.onTap});
+  final String label;
+  final IconData icon;
+  final ThemeMode mode;
+  final bool selected;
+  final ValueChanged<ThemeMode> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onTap(mode),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: selected ? context.fg : context.fg.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(children: [
+            Icon(icon,
+                color: selected ? (context.isDark ? Colors.black : Colors.white) : context.fg.withValues(alpha: 0.7),
+                size: 22),
+            const SizedBox(height: 6),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: selected ? (context.isDark ? Colors.black : Colors.white) : context.fg.withValues(alpha: 0.7))),
+          ]),
+        ),
+      ),
+    );
+  }
 }

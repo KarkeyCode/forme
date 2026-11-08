@@ -54,6 +54,22 @@ class HealthService {
     }
   }
 
+  /// On startup: if Health Connect access hasn't been granted yet, trigger the
+  /// Health Connect "allow access" prompt (not the app's own screen) so the
+  /// user can approve it after installing or updating the app.
+  Future<bool> ensurePermission() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return false;
+    try {
+      await _configure();
+      final has = await _health.hasPermissions(_types) ?? false;
+      if (has) return true;
+      return await requestPermission();
+    } catch (e) {
+      debugPrint('health ensure error: $e');
+      return false;
+    }
+  }
+
   /// Reads height/weight/body-fat and heart rate from Health Connect, if
   /// granted. Returns null on web / non-Android or when unavailable.
   ///

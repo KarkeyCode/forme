@@ -388,34 +388,74 @@ class _LifetimeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassCard(
       color: const Color(0xFF1C1C1C),
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-              center: Alignment(1.2, -0.6), radius: 1.4, colors: [Color(0x553C6E58), Colors.transparent]),
-        ),
-        child: Row(children: [
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Total Steps Tracked With Forme',
-                  style: TextStyle(color: Colors.white70, fontSize: 13)),
-              SizedBox(height: 2 * scale),
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: total.toDouble()),
-                duration: const Duration(milliseconds: 1400),
-                curve: Curves.easeOut,
-                builder: (_, v, __) => Text(_fmt.format(v.round()),
-                    style: TextStyle(color: Colors.white, fontSize: 30 * scale, fontWeight: FontWeight.w700)),
+      padding: EdgeInsets.zero,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(children: [
+          // Woven golden "pastry lattice" texture overlay.
+          Positioned.fill(child: CustomPaint(painter: _PastryWeavePainter())),
+          Container(
+            decoration: const BoxDecoration(
+              gradient: RadialGradient(
+                  center: Alignment(1.2, -0.6), radius: 1.4, colors: [Color(0x553C6E58), Colors.transparent]),
+            ),
+            padding: const EdgeInsets.all(18),
+            child: Row(children: [
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('Total Steps Tracked With Forme',
+                      style: TextStyle(color: Colors.white70, fontSize: 13)),
+                  SizedBox(height: 2 * scale),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: total.toDouble()),
+                    duration: const Duration(milliseconds: 1400),
+                    curve: Curves.easeOut,
+                    builder: (_, v, __) => Text(_fmt.format(v.round()),
+                        style: TextStyle(color: Colors.white, fontSize: 30 * scale, fontWeight: FontWeight.w700)),
+                  ),
+                  const Text('Every Step You Take, Counted', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                ]),
               ),
-              const Text('Every Step You Take, Counted', style: TextStyle(color: Colors.white54, fontSize: 11)),
+              const Column(children: [
+                Icon(Icons.favorite_border, color: Colors.white, size: 22),
+                SizedBox(height: 6),
+                Icon(Icons.timeline, color: Colors.white, size: 22),
+              ]),
             ]),
           ),
-          const Column(children: [
-            Icon(Icons.favorite_border, color: Colors.white, size: 22),
-            SizedBox(height: 6),
-            Icon(Icons.timeline, color: Colors.white, size: 22),
-          ]),
         ]),
       ),
     );
   }
+}
+
+/// A subtle interwoven lattice (think beef wellington pastry weave) used as a
+/// warm background texture behind the lifetime steps total.
+class _PastryWeavePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size s) {
+    const gold = Color(0xFFCBA15A);
+    final strip = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 9
+      ..color = gold.withValues(alpha: 0.10);
+    final sheen = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..color = Colors.white.withValues(alpha: 0.05);
+
+    const gap = 18.0;
+    // Two diagonal families crossing to suggest a woven lattice top.
+    for (double d = -s.height; d < s.width + s.height; d += gap) {
+      canvas.drawLine(Offset(d, 0), Offset(d + s.height, s.height), strip);
+      canvas.drawLine(Offset(d, 0), Offset(d + s.height, s.height), sheen);
+    }
+    for (double d = -s.height; d < s.width + s.height; d += gap) {
+      canvas.drawLine(Offset(d + s.height, 0), Offset(d, s.height), strip);
+      canvas.drawLine(Offset(d + s.height, 0), Offset(d, s.height), sheen);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _PastryWeavePainter old) => false;
 }

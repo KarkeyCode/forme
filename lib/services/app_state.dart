@@ -1,9 +1,11 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'auth/auth_service.dart';
+import 'haptics.dart';
 import 'health_service.dart';
 
 class FoodEntry {
@@ -144,7 +146,9 @@ class AppState extends ChangeNotifier {
   final auth = createAuthService();
 
   bool onboarded = false;
-  bool darkMode = false;
+  // Appearance: defaults to light; the user picks light/dark/auto in onboarding.
+  ThemeMode themeMode = ThemeMode.light;
+  bool hapticsEnabled = true;
   bool isPro = false;
   int points = 1340;
   List<FoodEntry> foods = [];
@@ -153,6 +157,9 @@ class AppState extends ChangeNotifier {
   // Auth + profile
   bool get signedIn => profile.provider.isNotEmpty;
   UserProfile profile = UserProfile();
+  // Providers the user has connected (prototype). The primary one is whichever
+  // they signed in with; others can be linked from the profile settings.
+  Set<String> linkedProviders = {};
   List<int> claimedGiftCards = []; // indexes into kGiftCards
 
   StepRange range = StepRange.week;
@@ -191,13 +198,16 @@ class AppState extends ChangeNotifier {
   Future<void> load() async {
     _prefs = await SharedPreferences.getInstance();
     onboarded = _prefs.getBool('onboarded') ?? false;
-    darkMode = _prefs.getBool('dark') ?? false;
+    themeMode = ThemeMode.values[_prefs.getInt('themeMode') ?? ThemeMode.light.index];
+    hapticsEnabled = _prefs.getBool('haptics') ?? true;
+    Haptics.enabled = hapticsEnabled;
     isPro = _prefs.getBool('pro') ?? false;
     points = _prefs.getInt('points') ?? 1340;
     completedExercises =
         (_prefs.getStringList('done') ?? []).map(int.parse).toSet();
     claimedGiftCards =
         (_prefs.getStringList('claimed') ?? []).map(int.parse).toList();
+    linkedProviders = (_prefs.getStringList('linked') ?? []).toSet();
     // Water + reminders
     waterGoalMl = _prefs.getInt('waterGoal') ?? 2000;
     waterLoggedMl = _prefs.getInt('waterLogged') ?? 0;
@@ -225,7 +235,14 @@ class AppState extends ChangeNotifier {
         FoodEntry('Ran 5km 3hrs ago', -435, now),
       ];
     }
-    if (onboarded) refreshSteps();
+    if (onboarded) _startupHealth();
+  }
+
+  /// On launch (and after an app update), make sure Health Connect access is
+  /// granted, prompting with the Health Connect dialog if it isn't yet.
+  Future<void> _startupHealth() async {
+    await health.ensurePermission();
+    await refreshSteps();
   }
 
   Future<void> refreshSteps() async {
@@ -249,21 +266,42 @@ class AppState extends ChangeNotifier {
       ..name = user.name
       ..email = user.email
       ..provider = user.provider;
+    linkedProviders.add(user.provider);
+    _prefs.setStringList('linked', linkedProviders.toList());
     _saveProfile();
     notifyListeners();
     return true;
   }
 
+  /// Connect an additional provider (prototype — no real OAuth).
+  void linkProvider(String provider) {
+    linkedProviders.add(provider);
+    _prefs.setStringList('linked', linkedProviders.toList());
+    notifyListeners();
+  }
+
+  /// Disconnect a provider. The primary sign in provider can't be removed.
+  void unlinkProvider(String provider) {
+    if (provider == profile.provider) return;
+    linkedProviders.remove(provider);
+    _prefs.setStringList('linked', linkedProviders.toList());
+    notifyListeners();
+  }
+
   Future<bool> signInWithGoogle({String? email}) =>
       signIn(() => auth.signInWithGoogle(email: email));
-  Future<bool> signInWithApple({String? email}) =>
-      signIn(() => auth.signInWithApple(email: email));
+  Future<bool> signInWithMicrosoft({String? email}) =>
+      signIn(() => auth.signInWithMicrosoft(email: email));
+  Future<bool> signInWithGitHub({String? email}) =>
+      signIn(() => auth.signInWithGitHub(email: email));
   Future<bool> signInWithEmail(String email, String password) =>
       signIn(() => auth.signInWithEmail(email, password));
 
   Future<void> signOut() async {
     await auth.signOut();
     profile = UserProfile();
+    linkedProviders.clear();
+    _prefs.remove('linked');
     _saveProfile();
     notifyListeners();
   }
@@ -343,6 +381,19 @@ class AppState extends ChangeNotifier {
     if (waterLoggedMl > before) {
       points += waterPointsPerGlass;
       _prefs.setInt('points', points);
+      // Duolingo-style escalating buzz: gentle early, stronger as the glass
+      // fills, with a little celebration the moment the daily goal is hit.
+      final reachedGoal = before < waterGoalMl && waterLoggedMl >= waterGoalMl;
+      final frac = waterLoggedMl / waterGoalMl;
+      if (reachedGoal) {
+        Haptics.success();
+      } else if (frac >= 0.8) {
+        Haptics.heavy();
+      } else if (frac >= 0.45) {
+        Haptics.medium();
+      } else {
+        Haptics.light();
+      }
     }
     _prefs.setInt('waterLogged', waterLoggedMl);
     notifyListeners();
@@ -415,9 +466,17 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleDark() {
-    darkMode = !darkMode;
-    _prefs.setBool('dark', darkMode);
+  void setThemeMode(ThemeMode m) {
+    themeMode = m;
+    _prefs.setInt('themeMode', m.index);
+    notifyListeners();
+  }
+
+  void setHaptics(bool v) {
+    hapticsEnabled = v;
+    Haptics.enabled = v;
+    _prefs.setBool('haptics', v);
+    if (v) Haptics.light();
     notifyListeners();
   }
 

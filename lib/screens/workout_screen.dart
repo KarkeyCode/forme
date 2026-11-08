@@ -4,9 +4,28 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/app_state.dart';
+import '../services/haptics.dart';
 import '../services/workout_plan.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+
+// Fresh, upbeat accents + icons cycled across the exercise list.
+const _accents = [
+  Color(0xFF34C77B),
+  Color(0xFF3B8EEA),
+  Color(0xFFB57BEA),
+  Color(0xFFF5903B),
+  Color(0xFFE5556B),
+  Color(0xFF17B5B0),
+];
+const _icons = [
+  Icons.directions_run,
+  Icons.fitness_center,
+  Icons.self_improvement,
+  Icons.sports_gymnastics,
+  Icons.favorite,
+  Icons.bolt,
+];
 
 class WorkoutScreen extends StatefulWidget {
   const WorkoutScreen({super.key});
@@ -114,8 +133,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             for (var i = 0; i < exercises.length; i++) ...[
               _ExerciseCard(
                 e: exercises[i],
+                accent: _accents[i % _accents.length],
+                icon: _icons[i % _icons.length],
                 done: s.completedExercises.contains(i),
-                onToggle: () => s.toggleExercise(i, exercises[i].points),
+                onToggle: () {
+                  Haptics.light();
+                  s.toggleExercise(i, exercises[i].points);
+                },
                 onVideo: () => _showVideo(exercises[i]),
               ),
               const SizedBox(height: 14),
@@ -149,66 +173,95 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 }
 
 class _ExerciseCard extends StatelessWidget {
-  const _ExerciseCard({required this.e, required this.done, required this.onToggle, required this.onVideo});
+  const _ExerciseCard(
+      {required this.e,
+      required this.accent,
+      required this.icon,
+      required this.done,
+      required this.onToggle,
+      required this.onVideo});
   final Exercise e;
+  final Color accent;
+  final IconData icon;
   final bool done;
   final VoidCallback onToggle, onVideo;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(clipBehavior: Clip.none, children: [
-      GlassCard(
-        onTap: onToggle,
-        padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+    final cardBg = context.isDark
+        ? Color.alphaBlend(accent.withValues(alpha: 0.12), const Color(0xFF1E1E1E))
+        : Color.alphaBlend(accent.withValues(alpha: 0.08), Colors.white);
+
+    return GestureDetector(
+      onTap: onToggle,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: accent.withValues(alpha: done ? 0.5 : 0.22), width: 1.3),
+          boxShadow: [
+            BoxShadow(color: accent.withValues(alpha: 0.12), blurRadius: 14, offset: const Offset(0, 6)),
+          ],
+        ),
         child: Row(children: [
+          // Colourful activity icon tile.
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                  colors: [accent, Color.alphaBlend(Colors.black.withValues(alpha: 0.15), accent)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [BoxShadow(color: accent.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 3))],
+            ),
+            child: Icon(done ? Icons.check_rounded : icon, color: Colors.white, size: 26),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(e.name,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: context.fg,
+                    decoration: done ? TextDecoration.lineThrough : null,
+                  )),
+              const SizedBox(height: 3),
+              Text(e.detail, style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.65))),
+              const SizedBox(height: 6),
               Row(children: [
-                Flexible(
-                  child: Text(e.name,
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        color: context.fg,
-                        decoration: done ? TextDecoration.lineThrough : null,
-                      )),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(20)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.bolt, size: 13, color: accent),
+                    Text(' ${e.points} pts',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: accent)),
+                  ]),
                 ),
-                if (done) ...[
-                  const SizedBox(width: 6),
-                  const Icon(Icons.check_circle, color: MaeveColors.green, size: 18),
-                ],
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: onVideo,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                        color: context.fg.withValues(alpha: 0.07), borderRadius: BorderRadius.circular(20)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.play_circle_outline, size: 13, color: context.fg.withValues(alpha: 0.7)),
+                      Text(' Watch',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.fg.withValues(alpha: 0.7))),
+                    ]),
+                  ),
+                ),
               ]),
-              const SizedBox(height: 4),
-              Text(e.detail, style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.7))),
-            ]),
-          ),
-          const SizedBox(width: 8),
-          InkWell(
-            onTap: onVideo,
-            child: Column(children: [
-              Icon(Icons.smart_display_outlined, color: context.fg, size: 28),
-              Text('Watch Video', style: TextStyle(fontSize: 9, color: context.fg.withValues(alpha: 0.6))),
             ]),
           ),
         ]),
       ),
-      Positioned(
-        right: 8,
-        top: -10,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-          decoration: BoxDecoration(
-            color: context.isDark ? const Color(0xFF2A2A2A) : Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4)],
-          ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.track_changes, size: 12, color: context.fg),
-            Text(' ${e.points.toString().padLeft(3, '0')}',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.fg)),
-          ]),
-        ),
-      ),
-    ]);
+    );
   }
 }

@@ -10,7 +10,7 @@ class AboutScreen extends StatelessWidget {
 
   static const _terms = <(String, String)>[
     ('1. Your Account',
-        'You\'re responsible for keeping your account secure. One human, one account — please don\'t share your login with others.'),
+        'You\'re responsible for keeping your account secure. One human, one account, so please keep your login to yourself.'),
     ('2. Health Data',
         'Forme reads the health data you choose to share to personalise your plan. You can disconnect or delete it at any time from Settings.'),
     ('3. Not Medical Advice',
@@ -92,7 +92,7 @@ class AboutScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                            'We built Forme to make being in shape feel simple — your health data, meals, workouts and rewards, all in one calm place.',
+                            'We built Forme to make being in shape feel simple. Your health data, meals, workouts and rewards, all in one calm place.',
                             style: TextStyle(fontSize: 14, height: 1.45, color: context.fg.withValues(alpha: 0.65))),
                       ]),
                     ),
@@ -136,7 +136,7 @@ class AboutScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 18),
                     Center(
-                      child: Text('Prototype — these terms are illustrative',
+                      child: Text('This is a prototype, so these terms are just for show',
                           style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.4))),
                     ),
                   ],

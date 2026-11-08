@@ -83,7 +83,7 @@ class RewardsScreen extends StatelessWidget {
               const Icon(Icons.construction, color: MaeveColors.red, size: 18),
               const SizedBox(width: 8),
               Flexible(
-                child: Text('Prototype — redemptions are a demo and won\'t be fulfilled.',
+                child: Text('This is a prototype, so redemptions are just a demo for now.',
                     style: TextStyle(fontSize: 12.5, color: context.fg, fontWeight: FontWeight.w500)),
               ),
             ]),
@@ -111,7 +111,7 @@ class _GiftTile extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Redeem ${g.brand} ${g.amount}?'),
-        content: Text('This will deduct ${_fmt.format(g.cost)} points.\n\nNote: this is a prototype — no real gift card is issued.'),
+        content: Text('This will use ${_fmt.format(g.cost)} points.\n\nThis is a prototype, so no real gift card is issued.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           FilledButton(
@@ -119,7 +119,7 @@ class _GiftTile extends StatelessWidget {
               s.claimGiftCard(index);
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${g.brand} redeemed (demo) — check back when rewards go live')));
+                  SnackBar(content: Text('${g.brand} redeemed. This is a demo, so check back when rewards go live.')));
             },
             child: const Text('Redeem'),
           ),
