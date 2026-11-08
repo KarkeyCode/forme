@@ -38,6 +38,7 @@ class UserProfile {
     List<String>? goals,
     this.bodyFatPct,
     this.syncedFromHealth = false,
+    this.photoPath = '',
   }) : goals = goals ?? [];
 
   String name;
@@ -53,10 +54,11 @@ class UserProfile {
   List<String> goals;
   double? bodyFatPct;
   bool syncedFromHealth;
+  String photoPath; // local gallery image path for the avatar ('' = none)
 
   /// What to greet the user as, preferring their chosen nickname.
   String get displayName =>
-      nickname.isNotEmpty ? nickname : (name.isNotEmpty ? name : 'maeve user');
+      nickname.isNotEmpty ? nickname : (name.isNotEmpty ? name : 'Forme User');
 
   bool get hasBody => heightCm != null && weightKg != null;
 
@@ -95,6 +97,7 @@ class UserProfile {
         'goals': goals,
         'bf': bodyFatPct,
         'sync': syncedFromHealth,
+        'photo': photoPath,
       };
 
   factory UserProfile.fromJson(Map<String, dynamic> j) => UserProfile(
@@ -113,6 +116,7 @@ class UserProfile {
             [if (j['goal'] != null && (j['goal'] as String).isNotEmpty) j['goal'] as String],
         bodyFatPct: (j['bf'] as num?)?.toDouble(),
         syncedFromHealth: (j['sync'] ?? false) as bool,
+        photoPath: (j['photo'] ?? '') as String,
       );
 }
 
@@ -170,8 +174,9 @@ class AppState extends ChangeNotifier {
   static const kMaxWaterMl = 5000; // can't drink more than 5L
 
   // ---- Reminders / notifications ----
-  bool notificationsEnabled = true;
-  bool waterRemindersEnabled = true;
+  // Off by default — the user opts in during onboarding or from settings.
+  bool notificationsEnabled = false;
+  bool waterRemindersEnabled = false;
   int workoutHour = 18; // preferred workout time (24h)
   int workoutMinute = 0;
 
@@ -198,8 +203,8 @@ class AppState extends ChangeNotifier {
     waterLoggedMl = _prefs.getInt('waterLogged') ?? 0;
     _waterDate = _prefs.getString('waterDate') ?? '';
     _rolloverWater();
-    notificationsEnabled = _prefs.getBool('notif') ?? true;
-    waterRemindersEnabled = _prefs.getBool('waterRemind') ?? true;
+    notificationsEnabled = _prefs.getBool('notif') ?? false;
+    waterRemindersEnabled = _prefs.getBool('waterRemind') ?? false;
     workoutHour = _prefs.getInt('woHour') ?? 18;
     workoutMinute = _prefs.getInt('woMin') ?? 0;
     final profRaw = _prefs.getString('profile');
@@ -267,6 +272,13 @@ class AppState extends ChangeNotifier {
 
   void saveProfile(UserProfile p) {
     profile = p;
+    _saveProfile();
+    notifyListeners();
+  }
+
+  /// Set (or clear with '') the local gallery photo used for the avatar.
+  void setPhotoPath(String path) {
+    profile.photoPath = path;
     _saveProfile();
     notifyListeners();
   }

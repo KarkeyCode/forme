@@ -67,7 +67,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
               Text('Stay On Track',
                   style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: context.fg)),
               const SizedBox(height: 6),
-              Text('Maeve can send gentle reminders so you never miss a workout or forget to hydrate.',
+              Text('Forme can send gentle reminders so you never miss a workout or forget to hydrate.',
                   style: TextStyle(fontSize: 14, height: 1.3, color: context.fg.withValues(alpha: 0.6))),
               const SizedBox(height: 22),
               Expanded(

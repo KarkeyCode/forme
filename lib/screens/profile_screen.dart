@@ -5,16 +5,23 @@ import 'package:provider/provider.dart';
 import '../services/app_state.dart';
 import '../services/notification_service.dart';
 import '../theme.dart';
+import '../widgets/avatar.dart';
 import '../widgets/common.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
+  Future<void> _pickPhoto(BuildContext context, AppState s) async {
+    final path = await pickGalleryImage();
+    if (path != null) s.setPhotoPath(path);
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
     final p = s.profile;
-    final name = p.displayName == 'maeve user' ? 'notkarkey' : p.displayName;
+    final name = p.displayName;
+    final avatar = avatarProvider(p.photoPath);
 
     Widget item(IconData i, String t, {Widget? trailing, VoidCallback? onTap, Color? color}) => ListTile(
           leading: Icon(i, color: color ?? context.fg),
@@ -29,14 +36,35 @@ class ProfileScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
           children: [
-            Text('profile', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: context.fg)),
+            Text('Profile', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: context.fg)),
             const SizedBox(height: 18),
             GlassCard(
               child: Row(children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: context.fg,
-                  child: MaeveLogo(size: 22, color: context.isDark ? Colors.black : Colors.white),
+                GestureDetector(
+                  onTap: () => _pickPhoto(context, s),
+                  child: Stack(children: [
+                    CircleAvatar(
+                      radius: 30,
+                      backgroundColor: context.fg,
+                      backgroundImage: avatar,
+                      child: avatar == null
+                          ? MaeveLogo(size: 22, color: context.isDark ? Colors.black : Colors.white)
+                          : null,
+                    ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: MaeveColors.blue,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: context.isDark ? const Color(0xFF141414) : Colors.white, width: 2),
+                        ),
+                        child: const Icon(Icons.photo_camera, size: 12, color: Colors.white),
+                      ),
+                    ),
+                  ]),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -47,7 +75,7 @@ class ProfileScreen extends StatelessWidget {
                       Text('@${p.username}', style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.55))),
                     if (p.email.isNotEmpty)
                       Text(p.email, style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.55))),
-                    Text('${s.points} points · ${s.isPro ? 'PRO' : 'free version'}',
+                    Text('${s.points} points · ${s.isPro ? 'PRO' : 'Free Version'}',
                         style: TextStyle(color: context.fg.withValues(alpha: 0.6))),
                   ]),
                 ),
@@ -65,48 +93,48 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 14),
 
             // My health profile overview
-            _sectionLabel(context, 'my health profile'),
+            _sectionLabel(context, 'My Health Profile'),
             GlassCard(
               onTap: () => context.push('/overview'),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
                   const Icon(Icons.monitor_heart_outlined, color: MaeveColors.green),
                   const SizedBox(width: 8),
-                  Text('health profile', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: context.fg)),
+                  Text('Health Profile', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: context.fg)),
                   const Spacer(),
                   Icon(Icons.chevron_right, color: context.fg.withValues(alpha: 0.5)),
                 ]),
                 const SizedBox(height: 12),
                 if (p.hasBody)
                   Wrap(spacing: 10, runSpacing: 10, children: [
-                    _chip(context, 'height', '${p.heightCm!.round()} cm'),
-                    _chip(context, 'weight', '${p.weightKg!.round()} kg'),
-                    if (p.bmi != null) _chip(context, 'bmi', p.bmi!.toStringAsFixed(1)),
-                    _chip(context, 'resting hr', '${s.restingHr} bpm'),
-                    _chip(context, 'stress', '${s.currentStress}/100'),
-                    if (p.bodyFatPct != null) _chip(context, 'body fat', '${p.bodyFatPct!.round()}%'),
+                    _chip(context, 'Height', '${p.heightCm!.round()} cm'),
+                    _chip(context, 'Weight', '${p.weightKg!.round()} kg'),
+                    if (p.bmi != null) _chip(context, 'BMI', p.bmi!.toStringAsFixed(1)),
+                    _chip(context, 'Resting HR', '${s.restingHr} bpm'),
+                    _chip(context, 'Stress', '${s.currentStress}/100'),
+                    if (p.bodyFatPct != null) _chip(context, 'Body Fat', '${p.bodyFatPct!.round()}%'),
                   ])
                 else
-                  Text('add your body stats to see your full health profile.',
+                  Text('Add your body stats to see your full health profile.',
                       style: TextStyle(fontSize: 13, color: context.fg.withValues(alpha: 0.6))),
                 const SizedBox(height: 12),
-                Text('tap to view body stats, steps, heart rate, stress & body composition',
+                Text('Tap to view body stats, steps, heart rate, stress & body composition',
                     style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.5))),
               ]),
             ),
             const SizedBox(height: 14),
 
-            _sectionLabel(context, 'settings'),
+            _sectionLabel(context, 'Settings'),
             GlassCard(
               padding: const EdgeInsets.symmetric(vertical: 6),
               child: Column(children: [
-                item(Icons.card_giftcard, 'rewards & gift cards',
+                item(Icons.card_giftcard, 'Rewards & Gift Cards',
                     trailing: Icon(Icons.chevron_right, color: context.fg.withValues(alpha: 0.4)),
                     onTap: () => context.push('/rewards')),
-                item(Icons.dark_mode_outlined, 'dark mode',
+                item(Icons.dark_mode_outlined, 'Dark Mode',
                     trailing: Switch(value: s.darkMode, onChanged: (_) => s.toggleDark()),
                     onTap: s.toggleDark),
-                item(Icons.favorite_border, 'reconnect health data', onTap: () async {
+                item(Icons.favorite_border, 'Reconnect Health Data', onTap: () async {
                   final ok = await s.requestHealth();
                   if (ok) await s.refreshSteps();
                   if (context.mounted) {
@@ -114,7 +142,7 @@ class ProfileScreen extends StatelessWidget {
                         content: Text(ok ? 'Health Connect linked' : 'Health Connect not available — using demo data')));
                   }
                 }),
-                item(Icons.notifications_active_outlined, 'reminders',
+                item(Icons.notifications_active_outlined, 'Reminders',
                     trailing: Switch(
                       value: s.notificationsEnabled,
                       onChanged: (v) async {
@@ -128,28 +156,31 @@ class ProfileScreen extends StatelessWidget {
                         );
                       },
                     )),
-                item(Icons.water_drop_outlined, 'daily water goal',
+                item(Icons.water_drop_outlined, 'Daily Water Goal',
                     trailing: Text('${(s.waterGoalMl / 1000).toStringAsFixed(s.waterGoalMl % 1000 == 0 ? 0 : 1)} L',
                         style: TextStyle(color: context.fg.withValues(alpha: 0.6), fontWeight: FontWeight.w600)),
                     onTap: () => _editWaterGoal(context, s)),
-                item(Icons.workspace_premium_outlined, s.isPro ? 'manage PRO' : 'upgrade to PRO',
+                item(Icons.workspace_premium_outlined, s.isPro ? 'Manage PRO' : 'Upgrade To PRO',
                     onTap: () => context.push('/pro')),
                 if (s.isPro)
-                  item(Icons.remove_circle_outline, 'cancel PRO (demo)', onTap: () => s.setPro(false)),
+                  item(Icons.remove_circle_outline, 'Cancel PRO (Demo)', onTap: () => s.setPro(false)),
+                item(Icons.info_outline, 'About Us',
+                    trailing: Icon(Icons.chevron_right, color: context.fg.withValues(alpha: 0.4)),
+                    onTap: () => context.push('/about')),
                 if (s.signedIn)
-                  item(Icons.logout, 'sign out', onTap: () async {
+                  item(Icons.logout, 'Sign Out', onTap: () async {
                     await s.signOut();
-                    if (context.mounted) context.go('/welcome');
+                    if (context.mounted) context.go('/onboarding');
                   }),
-                item(Icons.restart_alt, 'replay onboarding', color: MaeveColors.red, onTap: () {
+                item(Icons.restart_alt, 'Replay Onboarding', color: MaeveColors.red, onTap: () {
                   s.resetOnboarding();
-                  context.go('/welcome');
+                  context.go('/onboarding');
                 }),
               ]),
             ),
             const SizedBox(height: 20),
             Center(
-              child: Text('maeve v1.0.0',
+              child: Text('FORME v1.2.0',
                   style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.4))),
             ),
           ],
@@ -163,7 +194,7 @@ class ProfileScreen extends StatelessWidget {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Daily water goal'),
+        title: const Text('Daily Water Goal'),
         content: StatefulBuilder(
           builder: (ctx, setLocal) => Column(mainAxisSize: MainAxisSize.min, children: [
             Text('${(goal / 1000).toStringAsFixed(2)} L  ·  ${(goal / 250).round()} glasses',

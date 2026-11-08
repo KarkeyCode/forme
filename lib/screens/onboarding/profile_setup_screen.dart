@@ -82,7 +82,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               Text('Your Body Stats',
                   style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: context.fg)),
               const SizedBox(height: 6),
-              Text('Maeve uses these to personalise your plan. Enter them manually or sync from your health app.',
+              Text('Forme uses these to personalise your plan. Enter them manually or sync from your health app.',
                   style: TextStyle(fontSize: 14, height: 1.3, color: context.fg.withValues(alpha: 0.6))),
               const SizedBox(height: 18),
               SizedBox(
@@ -150,7 +150,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   ]),
                   if (_goals.isNotEmpty) ...[
                     const SizedBox(height: 10),
-                    const Text('Maeve will build a workout plan from these goals.',
+                    const Text('Forme will build a workout plan from these goals.',
                         style: TextStyle(fontSize: 12, color: MaeveColors.green, fontWeight: FontWeight.w500)),
                   ],
                 ]),

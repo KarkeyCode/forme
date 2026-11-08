@@ -1,11 +1,11 @@
 {
-    "name": "maeve_health",
-    "short_name": "maeve_health",
+    "name": "Forme",
+    "short_name": "Forme",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#141414",
     "theme_color": "#141414",
-    "description": "A new Flutter project.",
+    "description": "Forme — your health companion (en forme — in shape).",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

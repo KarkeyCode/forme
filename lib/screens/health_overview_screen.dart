@@ -28,7 +28,7 @@ class HealthOverviewScreen extends StatelessWidget {
                 IconButton(
                     onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
                     icon: Icon(Icons.arrow_back, color: context.fg)),
-                Text('health overview',
+                Text('Health Overview',
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: context.fg)),
               ]),
             ),
@@ -37,36 +37,36 @@ class HealthOverviewScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
                 children: [
                   // Today's activity
-                  _sectionTitle(context, 'today'),
+                  _sectionTitle(context, 'Today'),
                   Row(children: [
-                    Expanded(child: _stat(context, Icons.directions_walk, 'steps', _fmt.format(s.weekSteps.last.round()), MaeveColors.blue)),
+                    Expanded(child: _stat(context, Icons.directions_walk, 'Steps', _fmt.format(s.weekSteps.last.round()), MaeveColors.blue)),
                     const SizedBox(width: 12),
-                    Expanded(child: _stat(context, Icons.favorite, 'resting hr', '${s.restingHr} bpm', MaeveColors.red)),
+                    Expanded(child: _stat(context, Icons.favorite, 'Resting HR', '${s.restingHr} bpm', MaeveColors.red)),
                   ]),
                   const SizedBox(height: 12),
                   Row(children: [
-                    Expanded(child: _stat(context, Icons.self_improvement, 'stress', '${s.currentStress}/100', const Color(0xFFB57BEA))),
+                    Expanded(child: _stat(context, Icons.self_improvement, 'Stress', '${s.currentStress}/100', const Color(0xFFB57BEA))),
                     const SizedBox(width: 12),
-                    Expanded(child: _stat(context, Icons.local_fire_department, 'active kcal', _fmt.format((s.weekSteps.last * 0.04).round()), const Color(0xFFF59E0B))),
+                    Expanded(child: _stat(context, Icons.local_fire_department, 'Active Kcal', _fmt.format((s.weekSteps.last * 0.04).round()), const Color(0xFFF59E0B))),
                   ]),
                   const SizedBox(height: 20),
 
                   // Steps totals
-                  _sectionTitle(context, 'steps'),
+                  _sectionTitle(context, 'Steps'),
                   GlassCard(
                     child: Column(children: [
-                      _row(context, 'this week', _fmt.format(s.steps[StepRange.week] ?? 0)),
+                      _row(context, 'This Week', _fmt.format(s.steps[StepRange.week] ?? 0)),
                       _divider(context),
-                      _row(context, 'this month', _fmt.format(s.steps[StepRange.month] ?? 0)),
+                      _row(context, 'This Month', _fmt.format(s.steps[StepRange.month] ?? 0)),
                       _divider(context),
-                      _row(context, 'lifetime with maeve', _fmt.format(s.steps[StepRange.total] ?? 0)),
+                      _row(context, 'Lifetime With Forme', _fmt.format(s.steps[StepRange.total] ?? 0)),
                     ]),
                   ),
                   const SizedBox(height: 10),
                   GlassCard(
                     padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('heart rate · this week', style: TextStyle(fontWeight: FontWeight.w600, color: context.fg)),
+                      Text('Heart Rate · This Week', style: TextStyle(fontWeight: FontWeight.w600, color: context.fg)),
                       const SizedBox(height: 8),
                       SizedBox(height: 90, child: _MiniChart(s.weekHeartRate, MaeveColors.red)),
                     ]),
@@ -75,7 +75,7 @@ class HealthOverviewScreen extends StatelessWidget {
                   GlassCard(
                     padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('stress · this week', style: TextStyle(fontWeight: FontWeight.w600, color: context.fg)),
+                      Text('Stress · This Week', style: TextStyle(fontWeight: FontWeight.w600, color: context.fg)),
                       const SizedBox(height: 8),
                       SizedBox(height: 90, child: _MiniChart(s.weekStress, const Color(0xFFB57BEA))),
                     ]),
@@ -83,14 +83,14 @@ class HealthOverviewScreen extends StatelessWidget {
                   const SizedBox(height: 20),
 
                   // Body composition
-                  _sectionTitle(context, 'body composition'),
+                  _sectionTitle(context, 'Body Composition'),
                   if (!p.hasBody)
                     GlassCard(
                       child: Row(children: [
                         Icon(Icons.info_outline, color: context.fg.withValues(alpha: 0.6)),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: Text('add your height and weight in your profile to see body composition.',
+                          child: Text('Add your height and weight in your profile to see body composition.',
                               style: TextStyle(color: context.fg.withValues(alpha: 0.7), fontSize: 13)),
                         ),
                       ]),
@@ -98,16 +98,16 @@ class HealthOverviewScreen extends StatelessWidget {
                   else
                     GlassCard(
                       child: Column(children: [
-                        if (p.heightCm != null) _row(context, 'height', '${p.heightCm!.round()} cm'),
-                        if (p.weightKg != null) ...[_divider(context), _row(context, 'weight', '${p.weightKg!.round()} kg')],
-                        if (p.bmi != null) ...[_divider(context), _row(context, 'bmi', p.bmi!.toStringAsFixed(1))],
-                        if (p.bodyFatPct != null) ...[_divider(context), _row(context, 'body fat', '${p.bodyFatPct!.round()}%')],
-                        if (p.leanMassKg != null) ...[_divider(context), _row(context, 'lean mass', '${p.leanMassKg!.round()} kg')],
-                        if (p.bmr != null) ...[_divider(context), _row(context, 'bmr', '${_fmt.format(p.bmr)} kcal/day')],
+                        if (p.heightCm != null) _row(context, 'Height', '${p.heightCm!.round()} cm'),
+                        if (p.weightKg != null) ...[_divider(context), _row(context, 'Weight', '${p.weightKg!.round()} kg')],
+                        if (p.bmi != null) ...[_divider(context), _row(context, 'BMI', p.bmi!.toStringAsFixed(1))],
+                        if (p.bodyFatPct != null) ...[_divider(context), _row(context, 'Body Fat', '${p.bodyFatPct!.round()}%')],
+                        if (p.leanMassKg != null) ...[_divider(context), _row(context, 'Lean Mass', '${p.leanMassKg!.round()} kg')],
+                        if (p.bmr != null) ...[_divider(context), _row(context, 'BMR', '${_fmt.format(p.bmr)} kcal/day')],
                       ]),
                     ),
                   const SizedBox(height: 20),
-                  _sectionTitle(context, 'goals'),
+                  _sectionTitle(context, 'Goals'),
                   GlassCard(
                     child: p.goals.isEmpty
                         ? Row(children: [

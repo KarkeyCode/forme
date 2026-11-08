@@ -30,7 +30,7 @@ class _MaeveAppState extends State<MaeveApp> {
   Widget build(BuildContext context) {
     final dark = context.select<AppState, bool>((s) => s.darkMode);
     return MaterialApp.router(
-      title: 'maeve',
+      title: 'Forme',
       debugShowCheckedModeBanner: false,
       theme: MaeveTheme.light(),
       darkTheme: MaeveTheme.dark(),

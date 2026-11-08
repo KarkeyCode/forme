@@ -26,7 +26,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     _c.addStatusListener((st) {
       if (st == AnimationStatus.completed && mounted) {
         final s = context.read<AppState>();
-        context.go(s.onboarded ? '/home' : '/welcome');
+        context.go(s.onboarded ? '/home' : '/onboarding');
       }
     });
   }
@@ -56,8 +56,12 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   opacity: _word.value,
                   child: Transform.translate(
                     offset: Offset(0, 12 * (1 - _word.value)),
-                    child: Text('maeve health',
-                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: context.fg)),
+                    child: Text('FORME',
+                        style: TextStyle(
+                            fontSize: 28,
+                            letterSpacing: 4,
+                            fontWeight: FontWeight.w800,
+                            color: context.fg)),
                   ),
                 ),
                 const SizedBox(height: 6),

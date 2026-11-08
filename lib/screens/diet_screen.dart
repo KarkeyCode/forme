@@ -80,7 +80,7 @@ class _DietScreenState extends State<DietScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
     final now = DateTime.now();
-    final date = 'today, ${_ordinal(now.day)} ${DateFormat('MMMM').format(now).toLowerCase()}';
+    final date = 'Today, ${_ordinal(now.day)} ${DateFormat('MMMM').format(now)}';
     final row = TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: context.fg);
     final kc = TextStyle(fontSize: 14, color: context.fg.withValues(alpha: 0.55));
 
@@ -102,7 +102,7 @@ class _DietScreenState extends State<DietScreen> with SingleTickerProviderStateM
               ),
               const SizedBox(height: 18),
               Row(children: [
-                Text('total kcal', style: row.copyWith(fontWeight: FontWeight.w700)),
+                Text('Total Kcal', style: row.copyWith(fontWeight: FontWeight.w700)),
                 const Spacer(),
                 Text('${s.totalKcal}cal', style: kc),
               ]),
@@ -144,7 +144,7 @@ class _DietScreenState extends State<DietScreen> with SingleTickerProviderStateM
                   child: Text(_error!, style: const TextStyle(color: MaeveColors.red, fontSize: 12)),
                 ),
               const SizedBox(height: 10),
-              Text('type anything you ate or did — maeve estimates the calories.',
+              Text('Type anything you ate or did — Forme estimates the calories.',
                   style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.4))),
             ],
           ),
@@ -205,7 +205,7 @@ class _InputBox extends StatelessWidget {
         onSubmitted: onSubmit,
         style: row,
         decoration: InputDecoration(
-          hintText: 'write another...',
+          hintText: 'Write another...',
           hintStyle: TextStyle(color: context.fg.withValues(alpha: 0.4)),
           border: InputBorder.none,
           isDense: true,

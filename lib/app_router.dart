@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'screens/about_screen.dart';
 import 'screens/diet_screen.dart';
 import 'screens/health_overview_screen.dart';
 import 'screens/home_shell.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/onboarding/customize_profile_screen.dart';
 import 'screens/onboarding/health_sync_screen.dart';
-import 'screens/onboarding/how_it_works_screen.dart';
-import 'screens/onboarding/intro_screen.dart';
 import 'screens/onboarding/loading_screen.dart';
 import 'screens/onboarding/login_screen.dart';
+import 'screens/onboarding/onboarding_carousel.dart';
 import 'screens/onboarding/points_intro_screen.dart';
 import 'screens/onboarding/profile_setup_screen.dart';
 import 'screens/onboarding/reminders_screen.dart';
-import 'screens/onboarding/security_screen.dart';
-import 'screens/onboarding/welcome_screen.dart';
 import 'screens/pro_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/rewards_screen.dart';
@@ -47,13 +45,9 @@ GoRouter buildRouter(AppState state) => GoRouter(
       initialLocation: '/',
       routes: [
         GoRoute(path: '/', pageBuilder: (_, s) => _fade(const SplashScreen(), s)),
-        // Onboarding flow: welcome -> intro -> how -> security -> login ->
-        // customize -> sync -> profile setup -> reminders -> points intro ->
-        // loading -> home.
-        GoRoute(path: '/welcome', pageBuilder: (_, s) => _fade(const WelcomeScreen(), s)),
-        GoRoute(path: '/intro', pageBuilder: (_, s) => _fade(const IntroScreen(), s)),
-        GoRoute(path: '/how', pageBuilder: (_, s) => _fade(const HowItWorksScreen(), s)),
-        GoRoute(path: '/security', pageBuilder: (_, s) => _fade(const SecurityScreen(), s)),
+        // Onboarding flow: swipeable intro carousel -> login -> customize ->
+        // sync -> profile setup -> reminders -> points intro -> loading -> home.
+        GoRoute(path: '/onboarding', pageBuilder: (_, s) => _fade(const OnboardingCarousel(), s)),
         GoRoute(path: '/login', pageBuilder: (_, s) => _fade(const LoginScreen(), s)),
         GoRoute(path: '/customize', pageBuilder: (_, s) => _fade(const CustomizeProfileScreen(), s)),
         GoRoute(path: '/sync', pageBuilder: (_, s) => _fade(const HealthSyncScreen(), s)),
@@ -65,6 +59,7 @@ GoRouter buildRouter(AppState state) => GoRouter(
         GoRoute(path: '/pro', pageBuilder: (_, s) => _slideUp(const ProScreen(), s)),
         GoRoute(path: '/rewards', pageBuilder: (_, s) => _slideUp(const RewardsScreen(), s)),
         GoRoute(path: '/overview', pageBuilder: (_, s) => _slideUp(const HealthOverviewScreen(), s)),
+        GoRoute(path: '/about', pageBuilder: (_, s) => _slideUp(const AboutScreen(), s)),
         StatefulShellRoute.indexedStack(
           builder: (_, __, shell) => HomeShell(shell: shell),
           branches: [

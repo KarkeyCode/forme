@@ -68,7 +68,7 @@ class _ProScreenState extends State<ProScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(color: white, borderRadius: BorderRadius.circular(10)),
-                  child: const Text('save 51%',
+                  child: const Text('Save 51%',
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: MaeveColors.ink)),
                 ),
               ),
@@ -92,7 +92,7 @@ class _ProScreenState extends State<ProScreen> {
             padding: const EdgeInsets.fromLTRB(22, 8, 22, 16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                const Text('maeve health',
+                const Text('FORME',
                     style: TextStyle(color: white, fontSize: 20, fontWeight: FontWeight.w700)),
                 const SizedBox(width: 8),
                 Container(
@@ -109,28 +109,28 @@ class _ProScreenState extends State<ProScreen> {
                 ),
               ]),
               const SizedBox(height: 24),
-              const Text('commit to your',
+              const Text('Commit To Your',
                   style: TextStyle(color: Colors.white54, fontSize: 30, fontWeight: FontWeight.w700, height: 1.1)),
-              const Text('best self.',
+              const Text('Best Self.',
                   style: TextStyle(color: white, fontSize: 30, fontWeight: FontWeight.w700, height: 1.1)),
               const SizedBox(height: 24),
               Row(children: [
-                tile(Icons.show_chart, const Color(0xFF3FBF8A), 'full history &\ninsights'),
+                tile(Icons.show_chart, const Color(0xFF3FBF8A), 'Full History &\nInsights'),
                 const SizedBox(width: 10),
-                tile(Icons.auto_awesome, const Color(0xFFB57BEA), 'unlimited ai diet\nguidance'),
+                tile(Icons.auto_awesome, const Color(0xFFB57BEA), 'Unlimited AI Diet\nGuidance'),
               ]),
               const SizedBox(height: 10),
               Row(children: [
                 tile(Icons.dashboard_customize_outlined, const Color(0xFF3FBF8A),
-                    'customisable app\ninterface and icons'),
+                    'Customisable App\nInterface & Icons'),
                 const SizedBox(width: 10),
-                tile(Icons.trending_up, const Color(0xFFB57BEA), '25% more points\nper task'),
+                tile(Icons.trending_up, const Color(0xFFB57BEA), '25% More Points\nPer Task'),
               ]),
               const SizedBox(height: 22),
               Row(children: [
-                plan(false, 'monthly', '\$5.98'),
+                plan(false, 'Monthly', '\$5.98'),
                 const SizedBox(width: 10),
-                plan(true, 'yearly', '\$2.92'),
+                plan(true, 'Yearly', '\$2.92'),
               ]),
               const SizedBox(height: 14),
               Row(children: [
@@ -152,7 +152,7 @@ class _ProScreenState extends State<ProScreen> {
                   onPressed: () {
                     context.read<AppState>().setPro(true);
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                        content: Text('Welcome to maeve PRO (demo — no payment taken)')));
+                        content: Text('Welcome to Forme PRO (demo — no payment taken)')));
                     context.pop();
                   },
                   child: Text(_trial ? 'Start Free Trial' : 'Join Now',
@@ -162,7 +162,7 @@ class _ProScreenState extends State<ProScreen> {
               Center(
                 child: TextButton(
                   onPressed: () => context.pop(),
-                  child: const Text('Remind me Later', style: TextStyle(color: Colors.white60)),
+                  child: const Text('Remind Me Later', style: TextStyle(color: Colors.white60)),
                 ),
               ),
               Center(

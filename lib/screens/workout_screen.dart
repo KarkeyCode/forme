@@ -74,7 +74,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
           children: [
             Row(children: [
-              Text('maeve health',
+              Text('FORME',
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: context.fg)),
               const SizedBox(width: 8),
               Container(
@@ -91,9 +91,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               Text(' ${s.points}', style: TextStyle(fontWeight: FontWeight.w600, color: context.fg)),
             ]),
             const SizedBox(height: 22),
-            Text('ready for your',
+            Text('Ready For Your',
                 style: TextStyle(fontSize: 30, height: 1.1, fontWeight: FontWeight.w700, color: context.fg)),
-            Text('workout?',
+            Text('Workout?',
                 style: TextStyle(
                     fontSize: 30, height: 1.1, fontWeight: FontWeight.w700, color: context.fg.withValues(alpha: 0.45))),
             const SizedBox(height: 12),
@@ -138,7 +138,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             ),
             const SizedBox(height: 8),
             Center(
-              child: Text(_seconds == 0 && !_running ? 'start workout' : '$mm:$ss',
+              child: Text(_seconds == 0 && !_running ? 'Start Workout' : '$mm:$ss',
                   style: TextStyle(color: context.fg.withValues(alpha: 0.6))),
             ),
           ],

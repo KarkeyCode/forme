@@ -131,14 +131,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _googleIcon() => Container(
-        width: 22,
-        height: 22,
-        alignment: Alignment.center,
-        decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white),
-        child: const Text('G',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF4285F4))),
-      );
+  Widget _googleIcon() =>
+      Image.asset('assets/google_g.png', width: 22, height: 22);
 }
 
 /// A Google/Apple-style "choose an account" sheet. In the prototype it collects
@@ -159,12 +153,7 @@ Future<String?> _accountPicker(BuildContext context, {required String provider})
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           if (isGoogle)
-            Container(
-              width: 26, height: 26, alignment: Alignment.center,
-              decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFF1F1F1)),
-              child: const Text('G',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF4285F4))),
-            )
+            Image.asset('assets/google_g.png', width: 24, height: 24)
           else
             const Icon(Icons.apple, color: Colors.black, size: 26),
           const SizedBox(width: 10),
@@ -172,7 +161,7 @@ Future<String?> _accountPicker(BuildContext context, {required String provider})
               style: const TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.w600)),
         ]),
         const SizedBox(height: 4),
-        const Text('to continue to Maeve Health',
+        const Text('to continue to Forme',
             style: TextStyle(color: Colors.black54, fontSize: 13)),
         const SizedBox(height: 20),
         const Text('Choose an account',

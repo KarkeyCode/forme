@@ -71,9 +71,9 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
             anim: _menu,
             onDiet: () => _go(1),
             onWorkout: () => _go(2),
-            onPro: () {
+            onOverview: () {
               _menu.reverse();
-              context.push('/pro');
+              context.push('/overview');
             },
           ),
         ),
@@ -128,16 +128,16 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
 }
 
 class _RadialMenu extends StatelessWidget {
-  const _RadialMenu({required this.anim, required this.onDiet, required this.onWorkout, required this.onPro});
+  const _RadialMenu({required this.anim, required this.onDiet, required this.onWorkout, required this.onOverview});
   final Animation<double> anim;
-  final VoidCallback onDiet, onWorkout, onPro;
+  final VoidCallback onDiet, onWorkout, onOverview;
 
   @override
   Widget build(BuildContext context) {
     final items = [
-      (Icons.restaurant_menu, onDiet, 'diet'),
-      (Icons.fitness_center, onWorkout, 'workout'),
-      (Icons.workspace_premium_outlined, onPro, 'pro'),
+      (Icons.restaurant_menu, onDiet, 'Diet'),
+      (Icons.fitness_center, onWorkout, 'Workout'),
+      (Icons.monitor_heart_outlined, onOverview, 'Health'),
     ];
     final bg = context.isDark ? const Color(0xFF262626) : Colors.white;
     return SizedBox(

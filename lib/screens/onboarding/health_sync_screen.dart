@@ -19,12 +19,12 @@ class HealthSyncScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 22, 20, 16),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Text('"Maeve" would like to access and update your Health Data',
+            const Text('"Forme" would like to access and update your Health Data',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: MaeveColors.ink)),
             const SizedBox(height: 8),
             const Text(
-                'Maeve uses your steps and workout data to track your progress and personalise your plan.',
+                'Forme uses your steps and workout data to track your progress and personalise your plan.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13, color: MaeveColors.muted)),
             const SizedBox(height: 18),
@@ -75,9 +75,9 @@ class HealthSyncScreen extends StatelessWidget {
           ),
         ),
       ),
-      lead: 'health sync',
-      body: '\nsync your workouts and health data, make sure to authorise',
-      button: 'continue',
+      lead: 'Health Sync',
+      body: '\nSync your workouts and health data, make sure to authorise',
+      button: 'Continue',
       onNext: () => _askAccess(context),
     );
   }

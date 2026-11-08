@@ -25,7 +25,7 @@ class MaeveHeader extends StatelessWidget {
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
           child: leading ??
-              Text('maeve health',
+              Text('FORME',
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: context.fg)),
         ),
       ),
@@ -38,7 +38,7 @@ class MaeveHeader extends StatelessWidget {
             color: context.cardColor,
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Text(s.isPro ? 'PRO' : 'free version',
+          child: Text(s.isPro ? 'PRO' : 'Free',
               style: TextStyle(fontSize: 12, color: context.fg, fontWeight: FontWeight.w500)),
         ),
       ),
@@ -123,7 +123,7 @@ class _StepRingCard extends StatelessWidget {
           color: context.isDark ? Colors.white : MaeveColors.charcoal,
           track: context.isDark ? Colors.white12 : const Color(0xFFD9D9D9),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text('today',
+            Text('Today',
                 style: TextStyle(fontSize: 15 * scale, fontWeight: FontWeight.w600, color: context.fg.withValues(alpha: 0.7))),
             Text(_fmt.format(today),
                 style: TextStyle(fontSize: 36 * scale, height: 1.05, fontWeight: FontWeight.w700, color: context.fg)),
@@ -152,7 +152,7 @@ class _StepRingCard extends StatelessWidget {
             ),
             onPressed: () => context.push('/overview'),
             icon: const Icon(Icons.insights, size: 18),
-            label: const Text('View detailed health overview'),
+            label: const Text('View Detailed Health Overview'),
           ),
         ),
       ]),
@@ -182,9 +182,9 @@ class _MetricCarouselState extends State<_MetricCarousel> {
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
     final metrics = [
-      _Metric('steps', 'this week', s.weekSteps, MaeveColors.blue, (v) => _fmt.format(v.round())),
-      _Metric('heart rate', 'avg bpm', s.weekHeartRate, MaeveColors.red, (v) => '${v.round()} bpm'),
-      _Metric('stress', 'level /100', s.weekStress, const Color(0xFFB57BEA), (v) => '${v.round()}'),
+      _Metric('Steps', 'This Week', s.weekSteps, MaeveColors.blue, (v) => _fmt.format(v.round())),
+      _Metric('Heart Rate', 'Avg BPM', s.weekHeartRate, MaeveColors.red, (v) => '${v.round()} bpm'),
+      _Metric('Stress', 'Level /100', s.weekStress, const Color(0xFFB57BEA), (v) => '${v.round()}'),
     ];
 
     return GlassCard(
@@ -214,7 +214,7 @@ class _MetricCarouselState extends State<_MetricCarousel> {
             ),
         ]),
         Center(
-          child: Text('swipe for more metrics',
+          child: Text('Swipe For More Metrics',
               style: TextStyle(fontSize: 11, color: context.fg.withValues(alpha: 0.4))),
         ),
       ]),
@@ -323,7 +323,7 @@ class _WaterCard extends StatelessWidget {
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              Text('water', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.fg)),
+              Text('Water', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.fg)),
               const SizedBox(width: 6),
               if (done)
                 const Icon(Icons.check_circle, color: MaeveColors.green, size: 16),
@@ -347,7 +347,7 @@ class _WaterCard extends StatelessWidget {
                       color: capped ? context.fg.withValues(alpha: 0.12) : MaeveColors.blue,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(capped ? 'daily max reached' : '+ glass (250ml)',
+                    child: Text(capped ? 'Daily Max Reached' : '+ Glass (250ml)',
                         style: TextStyle(
                             color: capped ? context.fg.withValues(alpha: 0.6) : Colors.white,
                             fontWeight: FontWeight.w600,
@@ -377,7 +377,7 @@ class _WaterCard extends StatelessWidget {
       );
 }
 
-/// "total steps tracked with maeve" — replaces the old global-community card
+/// "total steps tracked with Forme" — replaces the old global-community card
 /// and uses the user's real lifetime step total.
 class _LifetimeCard extends StatelessWidget {
   const _LifetimeCard({required this.total, required this.scale});
@@ -396,7 +396,7 @@ class _LifetimeCard extends StatelessWidget {
         child: Row(children: [
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('total steps tracked with maeve',
+              const Text('Total Steps Tracked With Forme',
                   style: TextStyle(color: Colors.white70, fontSize: 13)),
               SizedBox(height: 2 * scale),
               TweenAnimationBuilder<double>(
@@ -406,7 +406,7 @@ class _LifetimeCard extends StatelessWidget {
                 builder: (_, v, __) => Text(_fmt.format(v.round()),
                     style: TextStyle(color: Colors.white, fontSize: 30 * scale, fontWeight: FontWeight.w700)),
               ),
-              const Text('every step you take, counted', style: TextStyle(color: Colors.white54, fontSize: 11)),
+              const Text('Every Step You Take, Counted', style: TextStyle(color: Colors.white54, fontSize: 11)),
             ]),
           ),
           const Column(children: [

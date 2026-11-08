@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../services/app_state.dart';
 import '../../theme.dart';
+import '../../widgets/avatar.dart';
 import '../../widgets/common.dart';
 
 /// Capitalises the first letter of each word as the user types — used for the
@@ -59,9 +60,15 @@ class _CustomizeProfileScreenState extends State<CustomizeProfileScreen> {
     context.go('/sync');
   }
 
+  Future<void> _pickPhoto() async {
+    final path = await pickGalleryImage();
+    if (path != null && mounted) context.read<AppState>().setPhotoPath(path);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final p = context.read<AppState>().profile;
+    final p = context.watch<AppState>().profile;
+    final avatar = avatarProvider(p.photoPath);
 
     return Scaffold(
       body: BlurBackground(
@@ -72,17 +79,41 @@ class _CustomizeProfileScreenState extends State<CustomizeProfileScreen> {
               Text('Customize Your Profile',
                   style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: context.fg)),
               const SizedBox(height: 6),
-              Text('This is how you\'ll appear in Maeve. You can change it anytime.',
+              Text('This is how you\'ll appear in Forme. You can change it anytime.',
                   style: TextStyle(fontSize: 14, height: 1.3, color: context.fg.withValues(alpha: 0.6))),
               const SizedBox(height: 22),
               Center(
                 child: Column(children: [
-                  CircleAvatar(
-                    radius: 40,
-                    backgroundColor: context.fg,
-                    child: MaeveLogo(size: 30, color: context.isDark ? Colors.black : Colors.white),
+                  GestureDetector(
+                    onTap: _pickPhoto,
+                    child: Stack(children: [
+                      CircleAvatar(
+                        radius: 40,
+                        backgroundColor: context.fg,
+                        backgroundImage: avatar,
+                        child: avatar == null
+                            ? MaeveLogo(size: 30, color: context.isDark ? Colors.black : Colors.white)
+                            : null,
+                      ),
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            color: MaeveColors.blue,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: context.isDark ? const Color(0xFF141414) : Colors.white, width: 2),
+                          ),
+                          child: const Icon(Icons.photo_camera, size: 14, color: Colors.white),
+                        ),
+                      ),
+                    ]),
                   ),
                   const SizedBox(height: 8),
+                  Text('Tap to add a photo',
+                      style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.5))),
                   if (p.email.isNotEmpty)
                     Text(p.email, style: TextStyle(fontSize: 13, color: context.fg.withValues(alpha: 0.55))),
                 ]),
@@ -97,7 +128,7 @@ class _CustomizeProfileScreenState extends State<CustomizeProfileScreen> {
                   _field(_legalName, 'Your full name', Icons.person_outline, title: true),
                   const SizedBox(height: 16),
                   _label(context, 'Username'),
-                  _field(_username, 'maeve_user', Icons.alternate_email,
+                  _field(_username, 'forme_user', Icons.alternate_email,
                       formatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))]),
                   const SizedBox(height: 8),
                   Text('Your username is unique and how friends find you.',

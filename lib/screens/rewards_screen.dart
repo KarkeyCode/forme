@@ -28,7 +28,7 @@ class RewardsScreen extends StatelessWidget {
                   onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
                   icon: Icon(Icons.arrow_back, color: context.fg),
                 ),
-                Text('rewards',
+                Text('Rewards',
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: context.fg)),
               ]),
             ),
@@ -48,7 +48,7 @@ class RewardsScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 14),
                   Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('your balance', style: TextStyle(fontSize: 13, color: context.fg.withValues(alpha: 0.6))),
+                    Text('Your Balance', style: TextStyle(fontSize: 13, color: context.fg.withValues(alpha: 0.6))),
                     Text('${_fmt.format(s.points)} points',
                         style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: context.fg)),
                   ]),
@@ -164,7 +164,7 @@ class _GiftTile extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            claimed ? 'redeemed' : '${_fmt.format(g.cost)} pts',
+            claimed ? 'Redeemed' : '${_fmt.format(g.cost)} pts',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
