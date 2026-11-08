@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../services/app_state.dart';
+import '../services/notification_service.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 
@@ -13,7 +14,7 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
     final p = s.profile;
-    final name = p.name.isNotEmpty ? p.name : 'notkarkey';
+    final name = p.displayName == 'maeve user' ? 'notkarkey' : p.displayName;
 
     Widget item(IconData i, String t, {Widget? trailing, VoidCallback? onTap, Color? color}) => ListTile(
           leading: Icon(i, color: color ?? context.fg),
@@ -42,6 +43,8 @@ class ProfileScreen extends StatelessWidget {
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(name,
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: context.fg)),
+                    if (p.username.isNotEmpty)
+                      Text('@${p.username}', style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.55))),
                     if (p.email.isNotEmpty)
                       Text(p.email, style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.55))),
                     Text('${s.points} points · ${s.isPro ? 'PRO' : 'free version'}',
@@ -111,6 +114,24 @@ class ProfileScreen extends StatelessWidget {
                         content: Text(ok ? 'Health Connect linked' : 'Health Connect not available — using demo data')));
                   }
                 }),
+                item(Icons.notifications_active_outlined, 'reminders',
+                    trailing: Switch(
+                      value: s.notificationsEnabled,
+                      onChanged: (v) async {
+                        s.setReminderPrefs(notifications: v);
+                        if (v) await NotificationService.instance.requestPermission();
+                        await NotificationService.instance.sync(
+                          enabled: v,
+                          waterReminders: s.waterRemindersEnabled,
+                          workoutHour: s.workoutHour,
+                          workoutMinute: s.workoutMinute,
+                        );
+                      },
+                    )),
+                item(Icons.water_drop_outlined, 'daily water goal',
+                    trailing: Text('${(s.waterGoalMl / 1000).toStringAsFixed(s.waterGoalMl % 1000 == 0 ? 0 : 1)} L',
+                        style: TextStyle(color: context.fg.withValues(alpha: 0.6), fontWeight: FontWeight.w600)),
+                    onTap: () => _editWaterGoal(context, s)),
                 item(Icons.workspace_premium_outlined, s.isPro ? 'manage PRO' : 'upgrade to PRO',
                     onTap: () => context.push('/pro')),
                 if (s.isPro)
@@ -133,6 +154,40 @@ class ProfileScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _editWaterGoal(BuildContext context, AppState s) {
+    var goal = s.waterGoalMl;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Daily water goal'),
+        content: StatefulBuilder(
+          builder: (ctx, setLocal) => Column(mainAxisSize: MainAxisSize.min, children: [
+            Text('${(goal / 1000).toStringAsFixed(2)} L  ·  ${(goal / 250).round()} glasses',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            Slider(
+              value: goal.toDouble(),
+              min: 1000,
+              max: 5000,
+              divisions: 16,
+              label: '${(goal / 1000).toStringAsFixed(2)} L',
+              onChanged: (v) => setLocal(() => goal = (v / 250).round() * 250),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () {
+              s.setWaterGoal(goal);
+              Navigator.pop(ctx);
+            },
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }

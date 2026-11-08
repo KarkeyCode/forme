@@ -8,6 +8,7 @@ import '../services/app_state.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import '../widgets/step_ring.dart';
+import '../widgets/water_glass.dart';
 
 final _fmt = NumberFormat.decimalPattern('en_US');
 
@@ -90,6 +91,8 @@ class DashboardScreen extends StatelessWidget {
                 _StepRingCard(today: today, goal: goal, scale: scale),
                 SizedBox(height: 14 * scale),
                 _MetricCarousel(scale: scale),
+                SizedBox(height: 14 * scale),
+                const _WaterCard(),
                 SizedBox(height: 14 * scale),
                 _LifetimeCard(total: s.steps[StepRange.total] ?? 0, scale: scale),
               ],
@@ -298,6 +301,80 @@ class _LineGraph extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Daily water intake with a filling glass. Each glass logged earns 5 points
+/// (capped at the 5L daily max).
+class _WaterCard extends StatelessWidget {
+  const _WaterCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<AppState>();
+    final litres = (s.waterLoggedMl / 1000);
+    final goalL = (s.waterGoalMl / 1000);
+    final capped = s.waterLoggedMl >= AppState.kMaxWaterMl;
+    final done = s.waterLoggedMl >= s.waterGoalMl;
+
+    return GlassCard(
+      child: Row(children: [
+        WaterGlass(progress: s.waterProgress),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Text('water', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.fg)),
+              const SizedBox(width: 6),
+              if (done)
+                const Icon(Icons.check_circle, color: MaeveColors.green, size: 16),
+            ]),
+            const SizedBox(height: 2),
+            Text('${litres.toStringAsFixed(litres.truncateToDouble() == litres ? 0 : 2)}L of ${goalL.toStringAsFixed(goalL.truncateToDouble() == goalL ? 0 : 1)}L',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: context.fg)),
+            Text('${s.glassesLogged} glasses · +${s.waterPointsPerGlass} pts each${s.isPro ? ' (PRO)' : ''}',
+                style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.55))),
+            const SizedBox(height: 10),
+            Row(children: [
+              _btn(context, Icons.remove, () => s.undoWater(), filled: false),
+              const SizedBox(width: 8),
+              Expanded(
+                child: GestureDetector(
+                  onTap: capped ? null : () => s.logWater(),
+                  child: Container(
+                    height: 38,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: capped ? context.fg.withValues(alpha: 0.12) : MaeveColors.blue,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(capped ? 'daily max reached' : '+ glass (250ml)',
+                        style: TextStyle(
+                            color: capped ? context.fg.withValues(alpha: 0.6) : Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13)),
+                  ),
+                ),
+              ),
+            ]),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  Widget _btn(BuildContext context, IconData icon, VoidCallback onTap, {bool filled = true}) =>
+      GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: context.fg.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, size: 20, color: context.fg),
+        ),
+      );
 }
 
 /// "total steps tracked with maeve" — replaces the old global-community card

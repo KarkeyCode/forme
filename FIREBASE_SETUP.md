@@ -81,7 +81,7 @@ class FirebaseAuthService implements AuthService {
         );
 
   @override
-  Future<AuthUser?> signInWithGoogle() async {
+  Future<AuthUser?> signInWithGoogle({String? email}) async {
     // Web uses a popup; mobile uses the google_sign_in flow.
     if (identical(0, 0.0)) {} // keep analyzer calm about kIsWeb branch below
     final googleUser = await GoogleSignIn().signIn();
@@ -96,7 +96,7 @@ class FirebaseAuthService implements AuthService {
   }
 
   @override
-  Future<AuthUser?> signInWithApple() async {
+  Future<AuthUser?> signInWithApple({String? email}) async {
     // Requires sign_in_with_apple + Apple Developer setup.
     // final apple = await SignInWithApple.getAppleIDCredential(scopes: [
     //   AppleIDAuthorizationScopes.email,

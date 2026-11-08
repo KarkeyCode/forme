@@ -4,11 +4,13 @@ import 'package:provider/provider.dart';
 
 import 'app_router.dart';
 import 'services/app_state.dart';
+import 'services/notification_service.dart';
 import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  await NotificationService.instance.init();
   final state = AppState();
   await state.load();
   runApp(ChangeNotifierProvider.value(value: state, child: const MaeveApp()));

@@ -124,7 +124,7 @@ class _ProScreenState extends State<ProScreen> {
                 tile(Icons.dashboard_customize_outlined, const Color(0xFF3FBF8A),
                     'customisable app\ninterface and icons'),
                 const SizedBox(width: 10),
-                tile(Icons.notifications_active_outlined, const Color(0xFFB57BEA), 'custom reminders'),
+                tile(Icons.trending_up, const Color(0xFFB57BEA), '25% more points\nper task'),
               ]),
               const SizedBox(height: 22),
               Row(children: [

@@ -31,11 +31,23 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
     setState(() => _busy = null);
     if (ok) {
-      context.go('/sync');
+      context.go('/customize');
     } else {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Could not sign in — try again')));
     }
+  }
+
+  Future<void> _google() async {
+    final email = await _accountPicker(context, provider: 'google');
+    if (email == null || !mounted) return;
+    _run('google', () => context.read<AppState>().signInWithGoogle(email: email));
+  }
+
+  Future<void> _apple() async {
+    final email = await _accountPicker(context, provider: 'apple');
+    if (email == null || !mounted) return;
+    _run('apple', () => context.read<AppState>().signInWithApple(email: email));
   }
 
   @override
@@ -52,10 +64,10 @@ class _LoginScreenState extends State<LoginScreen> {
               const Spacer(),
               Center(child: MaeveLogo(size: 54, color: context.fg)),
               const SizedBox(height: 22),
-              Text('create your account',
+              Text('Create Your Account',
                   style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: context.fg)),
               const SizedBox(height: 6),
-              Text('sign in to save your progress, points and rewards.',
+              Text('Sign in to save your progress, points and rewards.',
                   style: TextStyle(fontSize: 15, height: 1.3, color: context.fg.withValues(alpha: 0.6))),
               const SizedBox(height: 28),
               if (!_emailMode) ...[
@@ -63,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   label: 'Continue with Google',
                   icon: _googleIcon(),
                   loading: _busy == 'google',
-                  onTap: busy ? null : () => _run('google', s.signInWithGoogle),
+                  onTap: busy ? null : _google,
                 ),
                 const SizedBox(height: 12),
                 _AuthButton(
@@ -71,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   icon: const Icon(Icons.apple, size: 22, color: Colors.white),
                   dark: true,
                   loading: _busy == 'apple',
-                  onTap: busy ? null : () => _run('apple', s.signInWithApple),
+                  onTap: busy ? null : _apple,
                 ),
                 const SizedBox(height: 12),
                 _AuthButton(
@@ -80,12 +92,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   onTap: busy ? null : () => setState(() => _emailMode = true),
                 ),
               ] else ...[
-                _Field(controller: _email, hint: 'email', icon: Icons.mail_outline, keyboard: TextInputType.emailAddress),
+                _Field(controller: _email, hint: 'Email', icon: Icons.mail_outline, keyboard: TextInputType.emailAddress),
                 const SizedBox(height: 12),
-                _Field(controller: _password, hint: 'password', icon: Icons.lock_outline, obscure: true),
+                _Field(controller: _password, hint: 'Password', icon: Icons.lock_outline, obscure: true),
                 const SizedBox(height: 16),
                 PillButton(
-                  _busy == 'email' ? 'signing in…' : 'continue',
+                  _busy == 'email' ? 'Signing in…' : 'Continue',
                   onPressed: busy
                       ? () {}
                       : () {
@@ -102,13 +114,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 Center(
                   child: TextButton(
                     onPressed: busy ? null : () => setState(() => _emailMode = false),
-                    child: Text('back', style: TextStyle(color: context.fg.withValues(alpha: 0.7))),
+                    child: Text('Back', style: TextStyle(color: context.fg.withValues(alpha: 0.7))),
                   ),
                 ),
               ],
               const SizedBox(height: 20),
               Center(
-                child: Text('prototype — no real account is created yet',
+                child: Text('Prototype — no real account is created yet',
                     style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.4))),
               ),
               const Spacer(),
@@ -127,6 +139,83 @@ class _LoginScreenState extends State<LoginScreen> {
         child: const Text('G',
             style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF4285F4))),
       );
+}
+
+/// A Google/Apple-style "choose an account" sheet. In the prototype it collects
+/// the account email so the sign-in behaves like a real provider picker.
+Future<String?> _accountPicker(BuildContext context, {required String provider}) {
+  final isGoogle = provider == 'google';
+  final brand = isGoogle ? 'Google' : 'Apple';
+  final controller = TextEditingController();
+  return showModalBottomSheet<String>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+    builder: (ctx) => Padding(
+      padding: EdgeInsets.only(
+          left: 24, right: 24, top: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 28),
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          if (isGoogle)
+            Container(
+              width: 26, height: 26, alignment: Alignment.center,
+              decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFF1F1F1)),
+              child: const Text('G',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF4285F4))),
+            )
+          else
+            const Icon(Icons.apple, color: Colors.black, size: 26),
+          const SizedBox(width: 10),
+          Text('Sign in with $brand',
+              style: const TextStyle(color: Colors.black87, fontSize: 18, fontWeight: FontWeight.w600)),
+        ]),
+        const SizedBox(height: 4),
+        const Text('to continue to Maeve Health',
+            style: TextStyle(color: Colors.black54, fontSize: 13)),
+        const SizedBox(height: 20),
+        const Text('Choose an account',
+            style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 10),
+        TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.emailAddress,
+          style: const TextStyle(color: Colors.black87),
+          decoration: InputDecoration(
+            hintText: isGoogle ? 'you@gmail.com' : 'you@icloud.com',
+            hintStyle: const TextStyle(color: Colors.black38),
+            prefixIcon: const Icon(Icons.account_circle_outlined, color: Colors.black45),
+            filled: true,
+            fillColor: const Color(0xFFF5F5F5),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF1A73E8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            ),
+            onPressed: () {
+              final mail = controller.text.trim();
+              Navigator.pop(ctx, mail.contains('@') ? mail : 'you@${isGoogle ? 'gmail.com' : 'icloud.com'}');
+            },
+            child: const Text('Continue', style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Center(
+          child: Text('Prototype sign-in — your real $brand account is not contacted',
+              style: const TextStyle(color: Colors.black38, fontSize: 11)),
+        ),
+      ]),
+    ),
+  );
 }
 
 class _AuthButton extends StatelessWidget {

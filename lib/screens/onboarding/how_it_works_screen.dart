@@ -44,7 +44,7 @@ class HowItWorksScreen extends StatelessWidget {
       lead: 'how it works.',
       body: 'maeve reads your health data automatically!',
       button: 'got it',
-      onNext: () => context.go('/login'),
+      onNext: () => context.go('/security'),
     );
   }
 }

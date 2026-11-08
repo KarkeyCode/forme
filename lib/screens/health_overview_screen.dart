@@ -107,13 +107,30 @@ class HealthOverviewScreen extends StatelessWidget {
                       ]),
                     ),
                   const SizedBox(height: 20),
-                  _sectionTitle(context, 'goal'),
+                  _sectionTitle(context, 'goals'),
                   GlassCard(
-                    child: Row(children: [
-                      const Icon(Icons.flag_outlined, color: MaeveColors.green),
-                      const SizedBox(width: 12),
-                      Text(p.goal, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: context.fg)),
-                    ]),
+                    child: p.goals.isEmpty
+                        ? Row(children: [
+                            Icon(Icons.flag_outlined, color: context.fg.withValues(alpha: 0.6)),
+                            const SizedBox(width: 12),
+                            Text('No goals set yet',
+                                style: TextStyle(fontSize: 15, color: context.fg.withValues(alpha: 0.6))),
+                          ])
+                        : Wrap(spacing: 8, runSpacing: 8, children: [
+                            for (final g in p.goals)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: MaeveColors.green.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                  const Icon(Icons.flag, color: MaeveColors.green, size: 15),
+                                  const SizedBox(width: 6),
+                                  Text(g, style: const TextStyle(fontSize: 13, color: MaeveColors.green, fontWeight: FontWeight.w600)),
+                                ]),
+                              ),
+                          ]),
                   ),
                 ],
               ),

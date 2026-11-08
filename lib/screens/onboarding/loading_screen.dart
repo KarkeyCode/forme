@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../services/app_state.dart';
 import '../../theme.dart';
 import '../../widgets/common.dart';
+import '../../widgets/star_loader.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -16,7 +17,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 2200), () {
+    Future.delayed(const Duration(milliseconds: 2600), () {
       if (!mounted) return;
       context.read<AppState>().completeOnboarding();
       context.go('/home');
@@ -28,21 +29,12 @@ class _LoadingScreenState extends State<LoadingScreen> {
     return Scaffold(
       body: BlurBackground(
         child: Center(
-          child: GlassCard(
-            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 32),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              SizedBox(
-                width: 36,
-                height: 36,
-                child: CircularProgressIndicator(
-                    strokeWidth: 4, strokeCap: StrokeCap.round, color: context.fg),
-              ),
-              const SizedBox(height: 14),
-              Text('setting things up', style: TextStyle(color: context.fg, fontSize: 15)),
-              const SizedBox(height: 2),
-              const Text(' ', style: TextStyle(color: MaeveColors.muted)),
-            ]),
-          ),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            StarLoader(size: 140, color: context.fg),
+            const SizedBox(height: 28),
+            Text('Setting things up',
+                style: TextStyle(color: context.fg, fontSize: 16, fontWeight: FontWeight.w500)),
+          ]),
         ),
       ),
     );

@@ -12,8 +12,11 @@ class AuthUser {
 /// the prototype for real Firebase (see FIREBASE_SETUP.md) is a one-line
 /// change in [createAuthService].
 abstract class AuthService {
-  Future<AuthUser?> signInWithGoogle();
-  Future<AuthUser?> signInWithApple();
+  /// [email] is the account chosen in the picker. Real Firebase ignores it
+  /// (Google/Apple supply the identity); the prototype uses it to build the
+  /// signed-in user.
+  Future<AuthUser?> signInWithGoogle({String? email});
+  Future<AuthUser?> signInWithApple({String? email});
   Future<AuthUser?> signInWithEmail(String email, String password);
   Future<void> signOut();
 }
@@ -45,10 +48,10 @@ class LocalAuthService implements AuthService {
   }
 
   @override
-  Future<AuthUser?> signInWithGoogle() => _simulate('google');
+  Future<AuthUser?> signInWithGoogle({String? email}) => _simulate('google', email: email);
 
   @override
-  Future<AuthUser?> signInWithApple() => _simulate('apple');
+  Future<AuthUser?> signInWithApple({String? email}) => _simulate('apple', email: email);
 
   @override
   Future<AuthUser?> signInWithEmail(String email, String password) =>

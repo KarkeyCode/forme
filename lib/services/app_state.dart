@@ -28,25 +28,35 @@ class UserProfile {
     this.name = '',
     this.email = '',
     this.provider = '',
+    this.nickname = '',
+    this.legalName = '',
+    this.username = '',
     this.heightCm,
     this.weightKg,
     this.age,
     this.sex,
-    this.goal = 'Stay healthy',
+    List<String>? goals,
     this.bodyFatPct,
     this.syncedFromHealth = false,
-  });
+  }) : goals = goals ?? [];
 
   String name;
   String email;
   String provider; // 'google' | 'apple' | 'email' | ''
+  String nickname;
+  String legalName;
+  String username;
   double? heightCm;
   double? weightKg;
   int? age;
   Sex? sex;
-  String goal;
+  List<String> goals;
   double? bodyFatPct;
   bool syncedFromHealth;
+
+  /// What to greet the user as, preferring their chosen nickname.
+  String get displayName =>
+      nickname.isNotEmpty ? nickname : (name.isNotEmpty ? name : 'maeve user');
 
   bool get hasBody => heightCm != null && weightKg != null;
 
@@ -75,11 +85,14 @@ class UserProfile {
         'name': name,
         'email': email,
         'provider': provider,
+        'nickname': nickname,
+        'legalName': legalName,
+        'username': username,
         'h': heightCm,
         'w': weightKg,
         'age': age,
         'sex': sex?.index,
-        'goal': goal,
+        'goals': goals,
         'bf': bodyFatPct,
         'sync': syncedFromHealth,
       };
@@ -88,11 +101,16 @@ class UserProfile {
         name: (j['name'] ?? '') as String,
         email: (j['email'] ?? '') as String,
         provider: (j['provider'] ?? '') as String,
+        nickname: (j['nickname'] ?? '') as String,
+        legalName: (j['legalName'] ?? '') as String,
+        username: (j['username'] ?? '') as String,
         heightCm: (j['h'] as num?)?.toDouble(),
         weightKg: (j['w'] as num?)?.toDouble(),
         age: j['age'] as int?,
         sex: j['sex'] == null ? null : Sex.values[j['sex'] as int],
-        goal: (j['goal'] ?? 'Stay healthy') as String,
+        goals: (j['goals'] as List?)?.map((e) => e as String).toList() ??
+            // migrate the old single 'goal' field
+            [if (j['goal'] != null && (j['goal'] as String).isNotEmpty) j['goal'] as String],
         bodyFatPct: (j['bf'] as num?)?.toDouble(),
         syncedFromHealth: (j['sync'] ?? false) as bool,
       );
@@ -144,6 +162,27 @@ class AppState extends ChangeNotifier {
   int currentStress = 38;
   bool usingRealSteps = false;
 
+  // ---- Water tracking ----
+  int waterGoalMl = 2000; // 1000..5000
+  int waterLoggedMl = 0; // today
+  String _waterDate = '';
+  static const kGlassMl = 250;
+  static const kMaxWaterMl = 5000; // can't drink more than 5L
+
+  // ---- Reminders / notifications ----
+  bool notificationsEnabled = true;
+  bool waterRemindersEnabled = true;
+  int workoutHour = 18; // preferred workout time (24h)
+  int workoutMinute = 0;
+
+  double get waterProgress => (waterLoggedMl / waterGoalMl).clamp(0.0, 1.0);
+  int get glassesLogged => waterLoggedMl ~/ kGlassMl;
+
+  /// PRO perk: 25% more points per task (workouts, water, etc.).
+  double get pointsMultiplier => isPro ? 1.25 : 1.0;
+  int scaledPoints(int base) => (base * pointsMultiplier).round();
+  int get waterPointsPerGlass => scaledPoints(5);
+
   Future<void> load() async {
     _prefs = await SharedPreferences.getInstance();
     onboarded = _prefs.getBool('onboarded') ?? false;
@@ -154,6 +193,15 @@ class AppState extends ChangeNotifier {
         (_prefs.getStringList('done') ?? []).map(int.parse).toSet();
     claimedGiftCards =
         (_prefs.getStringList('claimed') ?? []).map(int.parse).toList();
+    // Water + reminders
+    waterGoalMl = _prefs.getInt('waterGoal') ?? 2000;
+    waterLoggedMl = _prefs.getInt('waterLogged') ?? 0;
+    _waterDate = _prefs.getString('waterDate') ?? '';
+    _rolloverWater();
+    notificationsEnabled = _prefs.getBool('notif') ?? true;
+    waterRemindersEnabled = _prefs.getBool('waterRemind') ?? true;
+    workoutHour = _prefs.getInt('woHour') ?? 18;
+    workoutMinute = _prefs.getInt('woMin') ?? 0;
     final profRaw = _prefs.getString('profile');
     if (profRaw != null) {
       profile = UserProfile.fromJson(jsonDecode(profRaw) as Map<String, dynamic>);
@@ -201,8 +249,10 @@ class AppState extends ChangeNotifier {
     return true;
   }
 
-  Future<bool> signInWithGoogle() => signIn(auth.signInWithGoogle);
-  Future<bool> signInWithApple() => signIn(auth.signInWithApple);
+  Future<bool> signInWithGoogle({String? email}) =>
+      signIn(() => auth.signInWithGoogle(email: email));
+  Future<bool> signInWithApple({String? email}) =>
+      signIn(() => auth.signInWithApple(email: email));
   Future<bool> signInWithEmail(String email, String password) =>
       signIn(() => auth.signInWithEmail(email, password));
 
@@ -221,15 +271,21 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Pull body stats from connected health data (falls back to demo values
-  /// on web / when nothing is available).
+  /// Pull body stats, heart rate and body composition from connected health
+  /// data (falls back to demo values on web / when nothing is available).
+  /// Stress has no standard Health Connect metric, so it's estimated from
+  /// heart rate.
   Future<void> syncProfileFromHealth() async {
     final ok = await requestHealth();
     final v = await health.fetchBody();
     if (v != null) {
-      profile
-        ..heightCm = v.heightCm ?? profile.heightCm
-        ..weightKg = v.weightKg ?? profile.weightKg;
+      if (v.heightCm != null) profile.heightCm = v.heightCm;
+      if (v.weightKg != null) profile.weightKg = v.weightKg;
+      if (v.bodyFatPct != null) profile.bodyFatPct = v.bodyFatPct;
+      if (v.restingHr != null) restingHr = v.restingHr!;
+      if (v.weekHeartRate != null && v.weekHeartRate!.isNotEmpty) {
+        weekHeartRate = v.weekHeartRate!;
+      }
     }
     // Sensible demo defaults so the overview is populated in the prototype.
     profile
@@ -239,7 +295,81 @@ class AppState extends ChangeNotifier {
       ..sex ??= Sex.male
       ..bodyFatPct ??= 17
       ..syncedFromHealth = ok || !kIsWeb;
+    // Estimate stress from heart rate (no standard health stress metric).
+    weekStress = [for (final hr in weekHeartRate) _stressFromHr(hr).toDouble()];
+    currentStress = _stressFromHr(weekHeartRate.last);
     _saveProfile();
+    notifyListeners();
+  }
+
+  int _stressFromHr(double hr) => ((hr - 55) * 1.7).clamp(6, 96).round();
+
+  // ---- Water ---------------------------------------------------------------
+
+  String _todayKey() {
+    final n = DateTime.now();
+    return '${n.year}-${n.month}-${n.day}';
+  }
+
+  void _rolloverWater() {
+    final k = _todayKey();
+    if (_waterDate != k) {
+      _waterDate = k;
+      waterLoggedMl = 0;
+      _prefs.setInt('waterLogged', 0);
+      _prefs.setString('waterDate', k);
+    }
+  }
+
+  /// Log a glass of water. Awards 5 points per effective log, but only up to
+  /// the 5L daily cap (you can't realistically drink more than 5L).
+  void logWater([int ml = kGlassMl]) {
+    _rolloverWater();
+    if (waterLoggedMl >= kMaxWaterMl) return;
+    final before = waterLoggedMl;
+    waterLoggedMl = (waterLoggedMl + ml).clamp(0, kMaxWaterMl);
+    if (waterLoggedMl > before) {
+      points += waterPointsPerGlass;
+      _prefs.setInt('points', points);
+    }
+    _prefs.setInt('waterLogged', waterLoggedMl);
+    notifyListeners();
+  }
+
+  /// Remove the last glass (and the points it earned) — for mistaps.
+  void undoWater([int ml = kGlassMl]) {
+    _rolloverWater();
+    if (waterLoggedMl <= 0) return;
+    waterLoggedMl = (waterLoggedMl - ml).clamp(0, kMaxWaterMl);
+    points = (points - waterPointsPerGlass).clamp(0, 1 << 31);
+    _prefs.setInt('waterLogged', waterLoggedMl);
+    _prefs.setInt('points', points);
+    notifyListeners();
+  }
+
+  void setWaterGoal(int ml) {
+    waterGoalMl = ml.clamp(1000, kMaxWaterMl);
+    _prefs.setInt('waterGoal', waterGoalMl);
+    notifyListeners();
+  }
+
+  void setReminderPrefs({bool? notifications, bool? water, int? hour, int? minute}) {
+    if (notifications != null) {
+      notificationsEnabled = notifications;
+      _prefs.setBool('notif', notifications);
+    }
+    if (water != null) {
+      waterRemindersEnabled = water;
+      _prefs.setBool('waterRemind', water);
+    }
+    if (hour != null) {
+      workoutHour = hour;
+      _prefs.setInt('woHour', hour);
+    }
+    if (minute != null) {
+      workoutMinute = minute;
+      _prefs.setInt('woMin', minute);
+    }
     notifyListeners();
   }
 
@@ -303,11 +433,12 @@ class AppState extends ChangeNotifier {
   }
 
   void toggleExercise(int i, int reward) {
+    final r = scaledPoints(reward); // PRO earns 25% more
     if (completedExercises.remove(i)) {
-      points -= reward;
+      points -= r;
     } else {
       completedExercises.add(i);
-      points += reward;
+      points += r;
     }
     _prefs.setStringList('done', completedExercises.map((e) => '$e').toList());
     _prefs.setInt('points', points);

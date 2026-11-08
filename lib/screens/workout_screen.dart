@@ -4,21 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/app_state.dart';
+import '../services/workout_plan.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
-
-class Exercise {
-  const Exercise(this.name, this.detail, this.points);
-  final String name, detail;
-  final int points;
-}
-
-const exercises = [
-  Exercise('bulgarian split squat', '3–4 sets × 8–12 reps per leg (90–120 secs rest between legs)', 50),
-  Exercise('single-leg deadlift', '3–4 sets × 8–12 reps per leg (90 secs rest)', 55),
-  Exercise('dumbbell floor press', '3–4 sets × 10–15 reps (to within 1–2 reps of failure)', 60),
-  Exercise('inverted row', '3–4 sets × 8–12 reps (90 secs rest)', 65),
-];
 
 class WorkoutScreen extends StatefulWidget {
   const WorkoutScreen({super.key});
@@ -75,6 +63,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<AppState>();
+    final exercises = recommendedWorkouts(s.profile.goals);
     final mm = (_seconds ~/ 60).toString().padLeft(2, '0');
     final ss = (_seconds % 60).toString().padLeft(2, '0');
 
@@ -107,7 +96,21 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             Text('workout?',
                 style: TextStyle(
                     fontSize: 30, height: 1.1, fontWeight: FontWeight.w700, color: context.fg.withValues(alpha: 0.45))),
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
+            // Which goals this plan is built from.
+            if (s.profile.goals.isNotEmpty)
+              Wrap(spacing: 8, runSpacing: 8, children: [
+                for (final g in s.profile.goals)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: MaeveColors.green.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(g, style: const TextStyle(fontSize: 12, color: MaeveColors.green, fontWeight: FontWeight.w600)),
+                  ),
+              ]),
+            const SizedBox(height: 16),
             for (var i = 0; i < exercises.length; i++) ...[
               _ExerciseCard(
                 e: exercises[i],
