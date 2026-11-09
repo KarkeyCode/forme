@@ -15,7 +15,8 @@ class GeminiService {
   static final instance = GeminiService._();
 
   static const _key = String.fromEnvironment('GEMINI_API_KEY');
-  static const _model = 'gemini-2.0-flash';
+  // Current fast, widely-available model (verified live Nov 2026).
+  static const _model = 'gemini-flash-lite-latest';
   bool get configured => _key.isNotEmpty;
 
   Uri get _endpoint => Uri.parse(
@@ -42,10 +43,17 @@ class GeminiService {
         return null;
       }
       final json = jsonDecode(res.body) as Map<String, dynamic>;
-      final text = (((json['candidates'] as List?)?.first
+      final parts = (((json['candidates'] as List?)?.first
               as Map<String, dynamic>?)?['content']
           as Map<String, dynamic>?)?['parts'] as List?;
-      return (text?.first as Map<String, dynamic>?)?['text'] as String?;
+      if (parts == null) return null;
+      // Newer models may return a "thought" part plus the answer — join text.
+      final out = parts
+          .map((p) => (p as Map<String, dynamic>)['text'] as String?)
+          .whereType<String>()
+          .join()
+          .trim();
+      return out.isEmpty ? null : out;
     } catch (e) {
       debugPrint('gemini error: $e');
       return null;

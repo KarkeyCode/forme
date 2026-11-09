@@ -32,7 +32,7 @@ Diet page uses Gemini automatically; otherwise it falls back.
 ## How it works in the code
 
 - `lib/services/gemini_service.dart` calls the Gemini REST API
-  (`models/gemini-2.0-flash:generateContent`). It reads the key from
+  (`models/gemini-flash-lite-latest:generateContent`). It reads the key from
   `String.fromEnvironment('GEMINI_API_KEY')`.
 - `estimateCalories(text)` → an integer (negative = calories burned for
   activities). The Diet page tries this first, then the offline
