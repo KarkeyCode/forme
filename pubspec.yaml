@@ -1,7 +1,7 @@
 name: maeve_health
 description: Forme - your health companion (en forme — in shape).
 publish_to: 'none'
-version: 1.2.0+3
+version: 1.3.0+5
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
@@ -19,6 +19,7 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   timezone: ^0.9.4
   image_picker: ^1.1.2
+  http: ^1.2.2
 
 dev_dependencies:
   flutter_test:

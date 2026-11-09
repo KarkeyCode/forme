@@ -1,11 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../services/app_state.dart';
 import '../services/food_estimator.dart';
+import '../services/gemini_service.dart';
+import '../services/haptics.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import 'dashboard_screen.dart';
@@ -24,6 +27,7 @@ class _DietScreenState extends State<DietScreen> with SingleTickerProviderStateM
       AnimationController(vsync: this, duration: const Duration(milliseconds: 1400));
   Timer? _typingStop;
   bool _typing = false;
+  bool _busy = false;
   String? _error;
 
   @override
@@ -62,17 +66,25 @@ class _DietScreenState extends State<DietScreen> with SingleTickerProviderStateM
     return switch (d % 10) { 1 => '${d}st', 2 => '${d}nd', 3 => '${d}rd', _ => '${d}th' };
   }
 
-  void _submit(String text) {
+  Future<void> _submit(String text) async {
     final t = text.trim();
-    if (t.isEmpty) return;
-    final kcal = FoodEstimator.estimate(t);
+    if (t.isEmpty || _busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    // Gemini detects ANY food/activity; fall back to the offline estimator.
+    int? kcal = await GeminiService.instance.estimateCalories(t);
+    kcal ??= FoodEstimator.estimate(t);
+    if (!mounted) return;
+    setState(() => _busy = false);
     if (kcal == null) {
-      setState(() => _error = "Hmm, couldn't read that one. Try something like \"2 eggs and toast\" or \"ran 5km\".");
+      setState(() =>
+          _error = "Hmm, couldn't read that one. Try something like \"2 eggs and toast\" or \"ran 5km\".");
       return;
     }
     context.read<AppState>().addFood(FoodEntry(t[0].toUpperCase() + t.substring(1), kcal, DateTime.now()));
     _ctrl.clear();
-    setState(() => _error = null);
     _focus.requestFocus();
   }
 
@@ -100,6 +112,24 @@ class _DietScreenState extends State<DietScreen> with SingleTickerProviderStateM
                   Text(date, style: TextStyle(fontSize: 14, color: context.fg)),
                 ]),
               ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: context.fg,
+                    side: BorderSide(color: context.fg.withValues(alpha: 0.2)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  onPressed: () {
+                    Haptics.light();
+                    context.push('/diet-plan');
+                  },
+                  icon: const Icon(Icons.auto_awesome, size: 18),
+                  label: const Text('Plan my diet with AI'),
+                ),
+              ),
               const SizedBox(height: 18),
               Row(children: [
                 Text('Total Kcal', style: row.copyWith(fontWeight: FontWeight.w700)),
@@ -117,17 +147,34 @@ class _DietScreenState extends State<DietScreen> with SingleTickerProviderStateM
                     child: const Icon(Icons.delete_outline, color: MaeveColors.red),
                   ),
                   onDismissed: (_) => s.removeFood(i),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 9),
-                    child: Row(children: [
-                      Expanded(child: Text(s.foods[i].label, style: row)),
-                      Text(
-                        s.foods[i].kcal < 0 ? '${s.foods[i].kcal} cal' : '${s.foods[i].kcal} cal',
-                        style: s.foods[i].kcal < 0
-                            ? kc.copyWith(color: MaeveColors.green, fontWeight: FontWeight.w600)
-                            : kc,
-                      ),
-                    ]),
+                  child: InkWell(
+                    onTap: () {
+                      Haptics.light();
+                      context.push('/food-detail',
+                          extra: {'label': s.foods[i].label, 'kcal': s.foods[i].kcal});
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Row(children: [
+                        Expanded(
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(s.foods[i].label, style: row),
+                            const SizedBox(height: 2),
+                            Row(children: [
+                              Text('View details',
+                                  style: TextStyle(fontSize: 11.5, color: context.fg.withValues(alpha: 0.45))),
+                              Icon(Icons.chevron_right, size: 14, color: context.fg.withValues(alpha: 0.4)),
+                            ]),
+                          ]),
+                        ),
+                        Text(
+                          '${s.foods[i].kcal} cal',
+                          style: s.foods[i].kcal < 0
+                              ? kc.copyWith(color: MaeveColors.green, fontWeight: FontWeight.w600)
+                              : kc,
+                        ),
+                      ]),
+                    ),
                   ),
                 ),
               const SizedBox(height: 10),
@@ -136,6 +183,7 @@ class _DietScreenState extends State<DietScreen> with SingleTickerProviderStateM
                 focus: _focus,
                 glow: _glow,
                 typing: _typing,
+                busy: _busy,
                 onSubmit: _submit,
               ),
               if (_error != null)
@@ -154,68 +202,78 @@ class _DietScreenState extends State<DietScreen> with SingleTickerProviderStateM
   }
 }
 
-/// The diet text field. Static bordered box at rest; a soft multi-colour glow
-/// that gently pulses only while the user is typing.
+/// The diet text field. The only glow is a thin underline on the typing line
+/// itself, which gently pulses while the user types (nothing hovers over the
+/// rest of the page).
 class _InputBox extends StatelessWidget {
   const _InputBox({
     required this.controller,
     required this.focus,
     required this.glow,
     required this.typing,
+    required this.busy,
     required this.onSubmit,
   });
   final TextEditingController controller;
   final FocusNode focus;
   final AnimationController glow;
   final bool typing;
+  final bool busy;
   final void Function(String) onSubmit;
 
   @override
   Widget build(BuildContext context) {
     final row = TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: context.fg);
-    return AnimatedBuilder(
-      animation: glow,
-      builder: (context, child) {
-        // 0 at rest -> up to ~1 at the peak of a typing pulse.
-        final t = typing ? (0.45 + 0.55 * glow.value) : 0.0;
-        return Container(
-          decoration: BoxDecoration(
-            color: context.cardColor.withValues(alpha: context.isDark ? 0.5 : 0.7),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: typing
-                  ? const Color(0xFF8E7BE0).withValues(alpha: 0.4 + 0.4 * t)
-                  : context.fg.withValues(alpha: 0.12),
-              width: 1.2,
-            ),
-            boxShadow: t == 0
-                ? null
-                : [
-                    BoxShadow(color: const Color(0xFF7BE0A5).withValues(alpha: 0.18 * t), blurRadius: 16 * t, spreadRadius: 1),
-                    BoxShadow(color: const Color(0xFF8E7BE0).withValues(alpha: 0.22 * t), blurRadius: 20 * t, spreadRadius: 1),
-                  ],
-          ),
-          child: child,
-        );
-      },
-      child: TextField(
-        controller: controller,
-        focusNode: focus,
-        textInputAction: TextInputAction.done,
-        onSubmitted: onSubmit,
-        style: row,
-        decoration: InputDecoration(
-          hintText: 'Write another...',
-          hintStyle: TextStyle(color: context.fg.withValues(alpha: 0.4)),
-          border: InputBorder.none,
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-          suffixIcon: IconButton(
-            icon: Icon(Icons.arrow_upward_rounded, color: context.fg),
-            onPressed: () => onSubmit(controller.text),
+    const accent = Color(0xFF8E7BE0);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: controller,
+          focusNode: focus,
+          textInputAction: TextInputAction.done,
+          onSubmitted: onSubmit,
+          style: row,
+          decoration: InputDecoration(
+            hintText: 'Write anything you ate or did...',
+            hintStyle: TextStyle(color: context.fg.withValues(alpha: 0.4)),
+            border: InputBorder.none,
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+            suffixIcon: busy
+                ? Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2.2, color: context.fg)),
+                  )
+                : IconButton(
+                    icon: Icon(Icons.arrow_upward_rounded, color: context.fg),
+                    onPressed: () => onSubmit(controller.text),
+                  ),
           ),
         ),
-      ),
+        // The typing line — the only thing that glows.
+        AnimatedBuilder(
+          animation: glow,
+          builder: (context, _) {
+            final t = typing ? (0.45 + 0.55 * glow.value) : 0.0;
+            return Container(
+              height: 2,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(2),
+                color: typing
+                    ? accent.withValues(alpha: 0.5 + 0.5 * t)
+                    : context.fg.withValues(alpha: 0.15),
+                boxShadow: t == 0
+                    ? null
+                    : [BoxShadow(color: accent.withValues(alpha: 0.55 * t), blurRadius: 8 * t, spreadRadius: 0)],
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }

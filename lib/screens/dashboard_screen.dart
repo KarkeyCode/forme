@@ -26,7 +26,12 @@ class MaeveHeader extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: leading ??
               Text('FORME',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: context.fg)),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w300,
+                    letterSpacing: 8,
+                    color: context.fg,
+                  )),
         ),
       ),
       const SizedBox(width: 6),
@@ -94,7 +99,21 @@ class DashboardScreen extends StatelessWidget {
                 SizedBox(height: 14 * scale),
                 const _WaterCard(),
                 SizedBox(height: 14 * scale),
-                _LifetimeCard(total: s.steps[StepRange.total] ?? 0, scale: scale),
+                _LifetimeCard(
+                  total: s.steps[StepRange.total] ?? 0,
+                  scale: scale,
+                  usingReal: s.usingRealSteps,
+                  onConnect: () async {
+                    final ok = await s.requestHealth();
+                    if (ok) await s.refreshSteps();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(ok
+                              ? 'Connected. Pulling your real steps from your health app.'
+                              : 'No health app connected. Open Health Connect (or Google Fit) and allow access.')));
+                    }
+                  },
+                ),
               ],
             );
           }),
@@ -380,47 +399,63 @@ class _WaterCard extends StatelessWidget {
 /// "total steps tracked with Forme" — replaces the old global-community card
 /// and uses the user's real lifetime step total.
 class _LifetimeCard extends StatelessWidget {
-  const _LifetimeCard({required this.total, required this.scale});
+  const _LifetimeCard(
+      {required this.total, required this.scale, required this.usingReal, required this.onConnect});
   final int total;
   final double scale;
+  final bool usingReal;
+  final VoidCallback onConnect;
 
   @override
   Widget build(BuildContext context) {
     return GlassCard(
-      color: const Color(0xFF1C1C1C),
+      color: const Color(0xFF0A0A0A),
       padding: EdgeInsets.zero,
+      onTap: usingReal ? null : onConnect,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: Stack(children: [
-          // Woven golden "pastry lattice" texture overlay.
+          // Subtle grey woven lattice texture over the black card.
           Positioned.fill(child: CustomPaint(painter: _PastryWeavePainter())),
           Container(
-            decoration: const BoxDecoration(
-              gradient: RadialGradient(
-                  center: Alignment(1.2, -0.6), radius: 1.4, colors: [Color(0x553C6E58), Colors.transparent]),
-            ),
-            padding: const EdgeInsets.all(18),
+            constraints: const BoxConstraints(minHeight: 172),
+            padding: const EdgeInsets.fromLTRB(22, 26, 22, 26),
+            alignment: Alignment.centerLeft,
             child: Row(children: [
               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
                   const Text('Total Steps Tracked With Forme',
                       style: TextStyle(color: Colors.white70, fontSize: 13)),
-                  SizedBox(height: 2 * scale),
+                  SizedBox(height: 4 * scale),
                   TweenAnimationBuilder<double>(
                     tween: Tween(begin: 0, end: total.toDouble()),
                     duration: const Duration(milliseconds: 1400),
                     curve: Curves.easeOut,
                     builder: (_, v, __) => Text(_fmt.format(v.round()),
-                        style: TextStyle(color: Colors.white, fontSize: 30 * scale, fontWeight: FontWeight.w700)),
+                        style: TextStyle(color: Colors.white, fontSize: 34 * scale, fontWeight: FontWeight.w700)),
                   ),
-                  const Text('Every Step You Take, Counted', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                  const SizedBox(height: 8),
+                  if (usingReal)
+                    const Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.verified, color: Colors.white54, size: 13),
+                      SizedBox(width: 5),
+                      Text('Synced from your health app', style: TextStyle(color: Colors.white54, fontSize: 11)),
+                    ])
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(20)),
+                      child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.sync, color: Colors.white, size: 14),
+                        SizedBox(width: 6),
+                        Text('Tap to connect your health app',
+                            style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                      ]),
+                    ),
                 ]),
               ),
-              const Column(children: [
-                Icon(Icons.favorite_border, color: Colors.white, size: 22),
-                SizedBox(height: 6),
-                Icon(Icons.timeline, color: Colors.white, size: 22),
-              ]),
+              const Icon(Icons.timeline, color: Colors.white, size: 24),
             ]),
           ),
         ]),
@@ -434,15 +469,14 @@ class _LifetimeCard extends StatelessWidget {
 class _PastryWeavePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size s) {
-    const gold = Color(0xFFCBA15A);
     final strip = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 9
-      ..color = gold.withValues(alpha: 0.10);
+      ..color = Colors.white.withValues(alpha: 0.055);
     final sheen = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
-      ..color = Colors.white.withValues(alpha: 0.05);
+      ..color = Colors.white.withValues(alpha: 0.03);
 
     const gap = 18.0;
     // Two diagonal families crossing to suggest a woven lattice top.

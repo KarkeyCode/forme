@@ -68,7 +68,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       ..sex = _sex
       ..goals = _goals.toList();
     context.read<AppState>().saveProfile(p);
-    context.go('/reminders');
+    context.go('/diet-prefs');
   }
 
   @override
@@ -150,8 +150,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   ]),
                   if (_goals.isNotEmpty) ...[
                     const SizedBox(height: 10),
-                    const Text('Forme will build a workout plan from these goals.',
-                        style: TextStyle(fontSize: 12, color: MaeveColors.green, fontWeight: FontWeight.w500)),
+                    Text('Forme will build a workout plan from these goals.',
+                        style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.6), fontWeight: FontWeight.w500)),
                   ],
                 ]),
               ),

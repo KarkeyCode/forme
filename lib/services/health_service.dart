@@ -162,8 +162,9 @@ class HealthService {
       final month = await _health.getTotalStepsInInterval(
               DateTime(now.year, now.month), now) ??
           0;
+      // Lifetime: go back as far as the health store keeps data (up to ~10 yrs).
       final all = await _health.getTotalStepsInInterval(
-              now.subtract(const Duration(days: 365)), now) ??
+              now.subtract(const Duration(days: 3650)), now) ??
           0;
       return StepResult(
           {StepRange.week: weekTotal, StepRange.month: month, StepRange.total: all},

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'auth/auth_service.dart';
 import 'haptics.dart';
 import 'health_service.dart';
+import 'workout_plan.dart';
 
 class FoodEntry {
   FoodEntry(this.label, this.kcal, this.time);
@@ -41,7 +42,11 @@ class UserProfile {
     this.bodyFatPct,
     this.syncedFromHealth = false,
     this.photoPath = '',
-  }) : goals = goals ?? [];
+    List<String>? dietaryPrefs,
+    List<String>? allergens,
+  })  : goals = goals ?? [],
+        dietaryPrefs = dietaryPrefs ?? [],
+        allergens = allergens ?? [];
 
   String name;
   String email;
@@ -57,6 +62,8 @@ class UserProfile {
   double? bodyFatPct;
   bool syncedFromHealth;
   String photoPath; // local gallery image path for the avatar ('' = none)
+  List<String> dietaryPrefs; // e.g. Vegan, Halal, No Seafood
+  List<String> allergens; // free-text allergens the user added
 
   /// What to greet the user as, preferring their chosen nickname.
   String get displayName =>
@@ -100,6 +107,8 @@ class UserProfile {
         'bf': bodyFatPct,
         'sync': syncedFromHealth,
         'photo': photoPath,
+        'diet': dietaryPrefs,
+        'allergens': allergens,
       };
 
   factory UserProfile.fromJson(Map<String, dynamic> j) => UserProfile(
@@ -119,6 +128,8 @@ class UserProfile {
         bodyFatPct: (j['bf'] as num?)?.toDouble(),
         syncedFromHealth: (j['sync'] ?? false) as bool,
         photoPath: (j['photo'] ?? '') as String,
+        dietaryPrefs: (j['diet'] as List?)?.map((e) => e as String).toList(),
+        allergens: (j['allergens'] as List?)?.map((e) => e as String).toList(),
       );
 }
 
@@ -503,13 +514,25 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleExercise(int i, int reward) {
-    final r = scaledPoints(reward); // PRO earns 25% more
+  static const _workoutTag = 'Workout: ';
+
+  void toggleExercise(int i, Exercise ex) {
+    final r = scaledPoints(ex.points); // PRO earns 25% more
+    // Rough calories burned from the effort (points), rounded to 5s.
+    final burn = ((ex.points * 4) / 5).round() * 5;
+    final label = '$_workoutTag${ex.name}';
     if (completedExercises.remove(i)) {
       points -= r;
+      // Remove the matching burned-calories entry from the diet log.
+      final idx = foods.lastIndexWhere((f) => f.label == label);
+      if (idx != -1) foods.removeAt(idx);
+      _saveFoods();
     } else {
       completedExercises.add(i);
       points += r;
+      // Show it on the diet page as burned (negative) calories.
+      foods.add(FoodEntry(label, -burn, DateTime.now()));
+      _saveFoods();
     }
     _prefs.setStringList('done', completedExercises.map((e) => '$e').toList());
     _prefs.setInt('points', points);

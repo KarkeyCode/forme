@@ -1,8 +1,10 @@
+import 'package:flutter/cupertino.dart' show CupertinoSwitch;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/app_state.dart';
+import '../../services/haptics.dart';
 import '../../services/notification_service.dart';
 import '../../theme.dart';
 import '../../widgets/common.dart';
@@ -79,63 +81,41 @@ class _RemindersScreenState extends State<RemindersScreen> {
               const SizedBox(height: 22),
               Expanded(
                 child: ListView(children: [
-                  // Vivid, inviting notifications toggle.
-                  GestureDetector(
-                    onTap: () => setState(() => _notifs = !_notifs),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(22),
-                        gradient: _notifs
-                            ? const LinearGradient(
-                                colors: [Color(0xFF7C5CFF), Color(0xFF4F8BFF)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight)
-                            : null,
-                        color: _notifs ? null : context.cardColor,
-                        boxShadow: _notifs
-                            ? [BoxShadow(color: const Color(0xFF6A6CFF).withValues(alpha: 0.35), blurRadius: 20, offset: const Offset(0, 8))]
-                            : null,
+                  // Clean, minimal reminders toggle with an Apple-style switch.
+                  GlassCard(
+                    child: Row(children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: context.fg.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(
+                            _notifs ? Icons.notifications_active_outlined : Icons.notifications_none,
+                            color: context.fg, size: 26),
                       ),
-                      child: Row(children: [
-                        Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: _notifs ? Colors.white.withValues(alpha: 0.2) : context.fg.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Icon(_notifs ? Icons.notifications_active : Icons.notifications_off_outlined,
-                              color: _notifs ? Colors.white : context.fg.withValues(alpha: 0.6), size: 28),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text('Turn On Reminders',
-                                style: TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w700,
-                                    color: _notifs ? Colors.white : context.fg)),
-                            const SizedBox(height: 2),
-                            Text(
-                                _notifs
-                                    ? 'Nice! We will give you a friendly nudge to move and hydrate.'
-                                    : 'Get gentle nudges for workouts and water. Stay on your streak.',
-                                style: TextStyle(
-                                    fontSize: 12.5,
-                                    height: 1.3,
-                                    color: _notifs ? Colors.white.withValues(alpha: 0.9) : context.fg.withValues(alpha: 0.6))),
-                          ]),
-                        ),
-                        Switch(
-                          value: _notifs,
-                          onChanged: (v) => setState(() => _notifs = v),
-                          activeThumbColor: Colors.white,
-                          activeTrackColor: Colors.white.withValues(alpha: 0.4),
-                        ),
-                      ]),
-                    ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text('Turn On Reminders',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: context.fg)),
+                          const SizedBox(height: 2),
+                          Text('We will nudge you to move and hydrate. You can change this any time.',
+                              style: TextStyle(
+                                  fontSize: 12.5, height: 1.3, color: context.fg.withValues(alpha: 0.6))),
+                        ]),
+                      ),
+                      const SizedBox(width: 6),
+                      CupertinoSwitch(
+                        value: _notifs,
+                        activeTrackColor: const Color(0xFF0A84FF), // Apple blue when on
+                        onChanged: (v) {
+                          Haptics.light();
+                          setState(() => _notifs = v);
+                        },
+                      ),
+                    ]),
                   ),
                   const SizedBox(height: 14),
                   _sectionLabel(context, 'Appearance'),
@@ -157,7 +137,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                   GlassCard(
                     onTap: _notifs ? _pickTime : null,
                     child: Row(children: [
-                      const Icon(Icons.schedule, color: MaeveColors.blue),
+                      Icon(Icons.schedule, color: context.fg.withValues(alpha: 0.7)),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -178,7 +158,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
                   GlassCard(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
-                        const Icon(Icons.water_drop, color: MaeveColors.blue),
+                        Icon(Icons.water_drop, color: context.fg.withValues(alpha: 0.7)),
                         const SizedBox(width: 10),
                         Text('${goalL.toStringAsFixed(goalL.truncateToDouble() == goalL ? 0 : 1)} L',
                             style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: context.fg)),

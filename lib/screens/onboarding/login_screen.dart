@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/app_state.dart';
+import '../../services/haptics.dart';
 import '../../theme.dart';
 import '../../widgets/common.dart';
 
@@ -93,8 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 12),
                 _AuthButton(
                   label: 'Continue with GitHub',
-                  icon: const Icon(Icons.code, size: 22, color: Colors.white),
-                  dark: true,
+                  icon: Image.asset('assets/github.png', width: 22, height: 22),
                   loading: _busy == 'github',
                   onTap: busy ? null : _github,
                 ),
@@ -174,7 +174,7 @@ Future<String?> _accountPicker(BuildContext context, {required String provider})
           if (isGoogle)
             Image.asset('assets/google_g.png', width: 24, height: 24)
           else if (isGithub)
-            const Icon(Icons.code, color: Color(0xFF24292F), size: 26)
+            Image.asset('assets/github.png', width: 26, height: 26)
           else
             const Icon(Icons.window, color: Color(0xFF00A4EF), size: 26),
           const SizedBox(width: 10),
@@ -235,18 +235,16 @@ Future<String?> _accountPicker(BuildContext context, {required String provider})
 }
 
 class _AuthButton extends StatelessWidget {
-  const _AuthButton(
-      {required this.label, required this.icon, this.onTap, this.dark = false, this.loading = false});
+  const _AuthButton({required this.label, required this.icon, this.onTap, this.loading = false});
   final String label;
   final Widget icon;
   final VoidCallback? onTap;
-  final bool dark;
   final bool loading;
 
   @override
   Widget build(BuildContext context) {
-    final bg = dark ? Colors.black : context.cardColor;
-    final fg = dark ? Colors.white : context.fg;
+    final bg = context.cardColor;
+    final fg = context.fg;
     return SizedBox(
       width: double.infinity,
       height: 54,
@@ -260,7 +258,12 @@ class _AuthButton extends StatelessWidget {
             side: BorderSide(color: context.fg.withValues(alpha: 0.12)),
           ),
         ),
-        onPressed: onTap,
+        onPressed: onTap == null
+            ? null
+            : () {
+                Haptics.light();
+                onTap!();
+              },
         child: loading
             ? SizedBox(
                 width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4, color: fg))

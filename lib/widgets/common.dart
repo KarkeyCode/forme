@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../services/haptics.dart';
 import '../theme.dart';
 
 /// Soft grey blurred blobs that slowly drift — the Figma backdrop.
@@ -93,7 +94,12 @@ class GlassCard extends StatelessWidget {
         child: Material(
           color: c,
           child: InkWell(
-            onTap: onTap,
+            onTap: onTap == null
+                ? null
+                : () {
+                    Haptics.light();
+                    onTap!();
+                  },
             child: Container(
               padding: padding,
               decoration: BoxDecoration(
@@ -132,7 +138,10 @@ class PillButton extends StatelessWidget {
               .titleMedium
               ?.copyWith(fontSize: 17, fontWeight: FontWeight.w600),
         ),
-        onPressed: onPressed,
+        onPressed: () {
+          Haptics.light();
+          onPressed();
+        },
         child: Text(label),
       ),
     );
@@ -183,7 +192,7 @@ class OnboardingLayout extends StatelessWidget {
 Widget authProviderIcon(String provider, {double size = 22, Color iconColor = Colors.black}) {
   return switch (provider) {
     'google' => Image.asset('assets/google_g.png', width: size, height: size),
-    'github' => Icon(Icons.code, size: size, color: iconColor),
+    'github' => Image.asset('assets/github.png', width: size, height: size),
     'microsoft' => Icon(Icons.window, size: size, color: iconColor),
     _ => Icon(Icons.mail_outline, size: size, color: iconColor),
   };

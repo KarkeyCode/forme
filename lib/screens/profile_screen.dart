@@ -210,7 +210,7 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Center(
-              child: Text('FORME v1.2.1',
+              child: Text('FORME v1.3.0',
                   style: TextStyle(fontSize: 12, color: context.fg.withValues(alpha: 0.4))),
             ),
           ],

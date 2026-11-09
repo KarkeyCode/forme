@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'screens/about_screen.dart';
+import 'screens/diet_plan_screen.dart';
 import 'screens/diet_screen.dart';
+import 'screens/food_detail_screen.dart';
 import 'screens/health_overview_screen.dart';
 import 'screens/home_shell.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/onboarding/customize_profile_screen.dart';
+import 'screens/onboarding/diet_prefs_screen.dart';
 import 'screens/onboarding/health_sync_screen.dart';
 import 'screens/onboarding/loading_screen.dart';
 import 'screens/onboarding/login_screen.dart';
@@ -17,7 +20,6 @@ import 'screens/onboarding/reminders_screen.dart';
 import 'screens/pro_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/rewards_screen.dart';
-import 'screens/splash_screen.dart';
 import 'screens/workout_screen.dart';
 import 'services/app_state.dart';
 
@@ -44,7 +46,8 @@ CustomTransitionPage<void> _slideUp(Widget child, GoRouterState s) =>
 GoRouter buildRouter(AppState state) => GoRouter(
       initialLocation: '/',
       routes: [
-        GoRoute(path: '/', pageBuilder: (_, s) => _fade(const SplashScreen(), s)),
+        // No startup animation: go straight to the app or onboarding.
+        GoRoute(path: '/', redirect: (_, __) => state.onboarded ? '/home' : '/onboarding'),
         // Onboarding flow: swipeable intro carousel -> login -> customize ->
         // sync -> profile setup -> reminders -> points intro -> loading -> home.
         GoRoute(path: '/onboarding', pageBuilder: (_, s) => _fade(const OnboardingCarousel(), s)),
@@ -52,6 +55,7 @@ GoRouter buildRouter(AppState state) => GoRouter(
         GoRoute(path: '/customize', pageBuilder: (_, s) => _fade(const CustomizeProfileScreen(), s)),
         GoRoute(path: '/sync', pageBuilder: (_, s) => _fade(const HealthSyncScreen(), s)),
         GoRoute(path: '/profile-setup', pageBuilder: (_, s) => _fade(const ProfileSetupScreen(), s)),
+        GoRoute(path: '/diet-prefs', pageBuilder: (_, s) => _fade(const DietPrefsScreen(), s)),
         GoRoute(path: '/reminders', pageBuilder: (_, s) => _fade(const RemindersScreen(), s)),
         GoRoute(path: '/points-intro', pageBuilder: (_, s) => _fade(const PointsIntroScreen(), s)),
         GoRoute(path: '/loading', pageBuilder: (_, s) => _fade(const LoadingScreen(), s)),
@@ -60,6 +64,11 @@ GoRouter buildRouter(AppState state) => GoRouter(
         GoRoute(path: '/rewards', pageBuilder: (_, s) => _slideUp(const RewardsScreen(), s)),
         GoRoute(path: '/overview', pageBuilder: (_, s) => _slideUp(const HealthOverviewScreen(), s)),
         GoRoute(path: '/about', pageBuilder: (_, s) => _slideUp(const AboutScreen(), s)),
+        GoRoute(path: '/diet-plan', pageBuilder: (_, s) => _slideUp(const DietPlanScreen(), s)),
+        GoRoute(path: '/food-detail', pageBuilder: (_, s) {
+          final m = (s.extra as Map?) ?? const {};
+          return _slideUp(FoodDetailScreen(label: (m['label'] ?? '') as String, kcal: (m['kcal'] ?? 0) as int), s);
+        }),
         StatefulShellRoute.indexedStack(
           builder: (_, __, shell) => HomeShell(shell: shell),
           branches: [

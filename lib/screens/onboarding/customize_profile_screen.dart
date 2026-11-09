@@ -104,7 +104,7 @@ class _CustomizeProfileScreenState extends State<CustomizeProfileScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(5),
                           decoration: BoxDecoration(
-                            color: MaeveColors.blue,
+                            color: context.fg,
                             shape: BoxShape.circle,
                             border: Border.all(
                                 color: context.isDark ? const Color(0xFF141414) : Colors.white, width: 2),

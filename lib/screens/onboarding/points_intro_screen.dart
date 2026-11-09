@@ -42,11 +42,11 @@ class PointsIntroScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: MaeveColors.green.withValues(alpha: 0.15),
+                  color: context.fg.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.track_changes, color: MaeveColors.green, size: 18),
+                  Icon(Icons.track_changes, color: context.fg, size: 18),
                   const SizedBox(width: 6),
                   Text('Earn Points', style: TextStyle(color: context.fg, fontWeight: FontWeight.w600)),
                 ]),

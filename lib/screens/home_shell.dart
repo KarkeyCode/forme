@@ -14,14 +14,24 @@ class HomeShell extends StatefulWidget {
   State<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMixin {
+class _HomeShellState extends State<HomeShell> with TickerProviderStateMixin {
   late final _menu =
       AnimationController(vsync: this, duration: const Duration(milliseconds: 320));
+  // Drives the slide-in when moving between tabs.
+  late final _slide =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 300), value: 1);
+  int _lastIndex = 0;
+  double _dir = 1;
+
   bool get _open => _menu.status == AnimationStatus.completed || _menu.status == AnimationStatus.forward;
 
-  void _toggle() => _open ? _menu.reverse() : _menu.forward();
+  void _toggle() {
+    Haptics.select();
+    _open ? _menu.reverse() : _menu.forward();
+  }
 
   void _go(int i) {
+    Haptics.light();
     _menu.reverse();
     widget.shell.goBranch(i, initialLocation: i == widget.shell.currentIndex);
   }
@@ -42,6 +52,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
   @override
   void dispose() {
     _menu.dispose();
+    _slide.dispose();
     super.dispose();
   }
 
@@ -49,6 +60,14 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
   Widget build(BuildContext context) {
     final navBg = context.isDark ? const Color(0xFF1B1B1B) : Colors.white;
     final idx = widget.shell.currentIndex;
+    // Trigger a slide-in whenever the active tab changes.
+    if (idx != _lastIndex) {
+      _dir = idx > _lastIndex ? 1 : -1;
+      _lastIndex = idx;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _slide.forward(from: 0);
+      });
+    }
     // Scale the bar to the device width so it feels right on small and large phones.
     final ns = (MediaQuery.sizeOf(context).width / 390).clamp(0.9, 1.14);
     Widget tab(int i, IconData icon, String label) => Expanded(
@@ -71,7 +90,17 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
         GestureDetector(
           behavior: HitTestBehavior.translucent,
           onHorizontalDragEnd: _onSwipe,
-          child: widget.shell,
+          child: AnimatedBuilder(
+            animation: _slide,
+            builder: (_, child) {
+              final t = Curves.easeOutCubic.transform(_slide.value);
+              return Opacity(
+                opacity: 0.35 + 0.65 * t,
+                child: Transform.translate(offset: Offset((1 - t) * _dir * 46, 0), child: child),
+              );
+            },
+            child: widget.shell,
+          ),
         ),
         // dim + close when the radial menu is open
         AnimatedBuilder(
@@ -92,6 +121,7 @@ class _HomeShellState extends State<HomeShell> with SingleTickerProviderStateMix
             onDiet: () => _go(1),
             onWorkout: () => _go(2),
             onOverview: () {
+              Haptics.light();
               _menu.reverse();
               context.push('/overview');
             },
